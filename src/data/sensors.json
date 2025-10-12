@@ -4,9 +4,11 @@
     "position": { "lat": 34.098, "lng": -118.595 },
     "status": "Active",
     "lastPing": "4:10pm PST",
-    "temperature": 75,
-    "humidity": 8,
     "firePercentage": 5,
+    "fireProbability": 85,
+    "probabilityVariance": 2.5,
+    "standardDeviation": 1.8,
+    "confidenceInterval": [82.5, 87.5],
     "imageUrl": "https://images.unsplash.com/photo-1570574423797-257150a0a560?q=80&w=2940&auto=format&fit=crop"
   },
   {
@@ -14,9 +16,11 @@
     "position": { "lat": 34.085, "lng": -118.610 },
     "status": "Active",
     "lastPing": "4:12pm PST",
-    "temperature": 78,
-    "humidity": 6,
     "firePercentage": 2,
+    "fireProbability": 45,
+    "probabilityVariance": 1.2,
+    "standardDeviation": 0.9,
+    "confidenceInterval": [43.8, 46.2],
     "imageUrl": "https://images.unsplash.com/photo-1522614262244-a5050837b92f?q=80&w=2819&auto=format&fit=crop"
   },
   {
@@ -24,9 +28,11 @@
     "position": { "lat": 34.057, "lng": -118.582 },
     "status": "Warning",
     "lastPing": "4:15pm PST",
-    "temperature": 95,
-    "humidity": 15,
     "firePercentage": 65,
+    "fireProbability": 100,
+    "probabilityVariance": 0.0,
+    "standardDeviation": 0.0,
+    "confidenceInterval": [100, 100],
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -34,9 +40,11 @@
     "position": { "lat": 34.049, "lng": -118.552 },
     "status": "Active",
     "lastPing": "4:14pm PST",
-    "temperature": 73,
-    "humidity": 7,
     "firePercentage": 10,
+    "fireProbability": 78,
+    "probabilityVariance": 3.1,
+    "standardDeviation": 2.2,
+    "confidenceInterval": [74.9, 81.1],
     "imageUrl": "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=2940&auto=format&fit=crop"
   }
 ]
