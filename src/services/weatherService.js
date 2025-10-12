@@ -1,69 +1,69 @@
-// Weather service for fetching weather data from WeatherAPI.com
+// Weather service for fetching weather data from Google Maps Weather API
 class WeatherService {
   constructor() {
-    this.apiKey = import.meta.env.VITE_WEATHER_API_KEY;
-    this.baseUrl = 'https://api.weatherapi.com/v1';
+    this.apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    this.baseUrl = 'https://weather.googleapis.com/v1';
   }
 
   async fetchWeatherData(lat, lng) {
     try {
-      console.log('Fetching weather data from WeatherAPI.com for:', lat, lng);
+      console.log('Fetching weather data from Google Maps Weather API for:', lat, lng);
       console.log('API Key available:', !!this.apiKey);
       
-      // Using WeatherAPI.com
+      // Using Google Maps Weather API
       const response = await fetch(
-        `${this.baseUrl}/current.json?key=${this.apiKey}&q=${lat},${lng}&aqi=yes`
+        `${this.baseUrl}/current?key=${this.apiKey}&location=${lat},${lng}&units=imperial`
       );
       
-      console.log('Weather API response status:', response.status);
+      console.log('Google Weather API response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Weather API error response:', errorText);
-        throw new Error(`WeatherAPI.com error: ${response.status} - ${errorText}`);
+        console.error('Google Weather API error response:', errorText);
+        throw new Error(`Google Weather API error: ${response.status} - ${errorText}`);
       }
       
       const data = await response.json();
-      console.log('Weather API response data:', data);
+      console.log('Google Weather API response data:', data);
       
-      // Extract current conditions from WeatherAPI.com response
-      const current = data.current;
+      // Extract current conditions from Google Weather API response
+      const current = data.currentConditions;
       
       if (!current) {
         throw new Error('No current conditions data in response');
       }
       
       return {
-        temperature: Math.round(current.temp_f),
-        humidity: current.humidity,
-        windSpeed: Math.round(current.wind_mph),
-        windDirection: current.wind_degree,
-        pressure: Math.round(current.pressure_in * 33.863886666667), // Convert inHg to hPa
-        description: current.condition.text,
-        icon: current.condition.icon,
-        // Additional WeatherAPI.com specific data
-        precipitation: current.precip_in || 0,
-        precipitationType: current.condition.text.toLowerCase().includes('rain') ? 'rain' : 'none',
-        windGust: Math.round(current.gust_mph || 0),
-        uvIndex: current.uv || 0,
-        visibility: Math.round(current.vis_miles || 10),
-        cloudCover: current.cloud || 0,
-        thunderstormProbability: current.condition.text.toLowerCase().includes('thunder') ? 80 : 0,
-        dewPoint: Math.round(current.dewpoint_f),
-        heatIndex: Math.round(current.heatindex_f || current.temp_f),
-        windChill: Math.round(current.windchill_f || current.temp_f),
-        // Air quality data from WeatherAPI.com
-        airQuality: data.air_quality ? {
-          co: data.air_quality.co,
-          no2: data.air_quality.no2,
-          o3: data.air_quality.o3,
-          pm2_5: data.air_quality.pm2_5,
-          pm10: data.air_quality.pm10,
-          so2: data.air_quality.so2
+        temperature: Math.round(current.temperature),
+        humidity: Math.round(current.humidity * 100), // Convert to percentage
+        windSpeed: Math.round(current.windSpeed),
+        windDirection: current.windDirection,
+        pressure: Math.round(current.pressure),
+        description: current.condition,
+        icon: current.icon,
+        // Additional Google Weather API specific data
+        precipitation: current.precipitation || 0,
+        precipitationType: current.condition.toLowerCase().includes('rain') ? 'rain' : 'none',
+        windGust: Math.round(current.windGust || current.windSpeed),
+        uvIndex: current.uvIndex || 0,
+        visibility: Math.round(current.visibility || 10),
+        cloudCover: Math.round(current.cloudCover * 100), // Convert to percentage
+        thunderstormProbability: current.condition.toLowerCase().includes('thunder') ? 80 : 0,
+        dewPoint: Math.round(current.dewPoint),
+        heatIndex: Math.round(current.heatIndex || current.temperature),
+        windChill: Math.round(current.windChill || current.temperature),
+        // Air quality data from Google Weather API
+        airQuality: current.airQuality ? {
+          co: current.airQuality.co,
+          no2: current.airQuality.no2,
+          o3: current.airQuality.o3,
+          pm2_5: current.airQuality.pm2_5,
+          pm10: current.airQuality.pm10,
+          so2: current.airQuality.so2
         } : null
       };
     } catch (error) {
-      console.error('Error fetching weather data from WeatherAPI.com:', error);
+      console.error('Error fetching weather data from Google Maps Weather API:', error);
       // Return mock data if API fails
       return {
         temperature: 75,

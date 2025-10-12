@@ -34,28 +34,21 @@ This project requires a Google Maps API key to display the map and sensor data. 
 
 ## Configuring the Weather API
 
-The dashboard integrates comprehensive weather data for each sensor location using [WeatherAPI.com](https://www.weatherapi.com/). This provides real-time weather data including temperature, precipitation, humidity, wind conditions, UV index, air quality, and more.
+The dashboard integrates comprehensive weather data for each sensor location using the Google Maps Weather API. This provides real-time weather data including temperature, precipitation, humidity, wind conditions, UV index, air quality, and more.
 
-### WeatherAPI.com Setup
+### Google Maps Weather API Setup
 
-1. Go to [WeatherAPI.com](https://www.weatherapi.com/)
-2. Sign up for a free account
-3. Navigate to your dashboard to get your API key
-4. Copy your API key
-5. Add it to your `.env.local` file as `VITE_WEATHER_API_KEY`
+The weather data is fetched using the same Google Maps API key you already have configured. No additional setup is required - the weather API is automatically enabled when you enable the Maps JavaScript API.
 
-**Note**: WeatherAPI.com offers a generous free tier with comprehensive weather and air quality data.
+**Note**: The Google Maps Weather API provides comprehensive weather and air quality data as part of the Google Maps platform.
 
 ## Create .env.local
 
 Once the API keys are generated, create a `.env.local` file in the project root with the following content:
 
 ```
-# Google Maps API Key (Required for map functionality)
+# Google Maps API Key (Required for map functionality and weather data)
 VITE_GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY_HERE
-
-# WeatherAPI.com API Key (Required for weather data)
-VITE_WEATHER_API_KEY=YOUR_WEATHER_API_KEY_HERE
 ```
 
 **Important Notes:**
