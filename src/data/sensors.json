@@ -46,5 +46,101 @@
     "standardDeviation": 2.2,
     "confidenceInterval": [74.9, 81.1],
     "imageUrl": "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=2940&auto=format&fit=crop"
+  },
+  {
+    "id": 5,
+    "position": { "lat": 34.062, "lng": -118.575 },
+    "status": "Critical",
+    "lastPing": "4:16pm PST",
+    "firePercentage": 95,
+    "fireProbability": 100,
+    "probabilityVariance": 0.0,
+    "standardDeviation": 0.0,
+    "confidenceInterval": [100, 100],
+    "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
+  },
+  {
+    "id": 6,
+    "position": { "lat": 34.068, "lng": -118.570 },
+    "status": "Critical",
+    "lastPing": "4:17pm PST",
+    "firePercentage": 98,
+    "fireProbability": 100,
+    "probabilityVariance": 0.0,
+    "standardDeviation": 0.0,
+    "confidenceInterval": [100, 100],
+    "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
+  },
+  {
+    "id": 7,
+    "position": { "lat": 34.075, "lng": -118.565 },
+    "status": "Critical",
+    "lastPing": "4:18pm PST",
+    "firePercentage": 92,
+    "fireProbability": 100,
+    "probabilityVariance": 0.0,
+    "standardDeviation": 0.0,
+    "confidenceInterval": [100, 100],
+    "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
+  },
+  {
+    "id": 8,
+    "position": { "lat": 34.045, "lng": -118.590 },
+    "status": "Warning",
+    "lastPing": "4:19pm PST",
+    "firePercentage": 75,
+    "fireProbability": 95,
+    "probabilityVariance": 1.5,
+    "standardDeviation": 1.2,
+    "confidenceInterval": [93.5, 96.5],
+    "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
+  },
+  {
+    "id": 9,
+    "position": { "lat": 34.038, "lng": -118.585 },
+    "status": "Warning",
+    "lastPing": "4:20pm PST",
+    "firePercentage": 68,
+    "fireProbability": 92,
+    "probabilityVariance": 2.1,
+    "standardDeviation": 1.6,
+    "confidenceInterval": [89.9, 94.1],
+    "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
+  },
+  {
+    "id": 10,
+    "position": { "lat": 34.110, "lng": -118.620 },
+    "status": "Active",
+    "lastPing": "4:22pm PST",
+    "firePercentage": 15,
+    "fireProbability": 25,
+    "probabilityVariance": 1.8,
+    "standardDeviation": 1.4,
+    "confidenceInterval": [23.2, 26.8],
+    "imageUrl": "https://images.unsplash.com/photo-1570574423797-257150a0a560?q=80&w=2940&auto=format&fit=crop"
+  },
+  {
+    "id": 11,
+    "position": { "lat": 34.125, "lng": -118.635 },
+    "status": "Active",
+    "lastPing": "4:23pm PST",
+    "firePercentage": 8,
+    "fireProbability": 18,
+    "probabilityVariance": 1.2,
+    "standardDeviation": 0.9,
+    "confidenceInterval": [16.8, 19.2],
+    "imageUrl": "https://images.unsplash.com/photo-1522614262244-a5050837b92f?q=80&w=2819&auto=format&fit=crop"
+  },
+  {
+    "id": 12,
+    "position": { "lat": 34.140, "lng": -118.650 },
+    "status": "Active",
+    "lastPing": "4:24pm PST",
+    "firePercentage": 12,
+    "fireProbability": 22,
+    "probabilityVariance": 1.5,
+    "standardDeviation": 1.1,
+    "confidenceInterval": [20.5, 23.5],
+    "imageUrl": "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=2940&auto=format&fit=crop"
   }
 ]
