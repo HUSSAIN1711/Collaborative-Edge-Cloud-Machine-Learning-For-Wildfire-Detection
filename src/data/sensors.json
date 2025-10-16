@@ -9,11 +9,13 @@
     "probabilityVariance": 2.5,
     "standardDeviation": 1.8,
     "confidenceInterval": [82.5, 87.5],
+    "batteryStatus": 78,
+    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1570574423797-257150a0a560?q=80&w=2940&auto=format&fit=crop"
   },
   {
     "id": 2,
-    "position": { "lat": 34.085, "lng": -118.610 },
+    "position": { "lat": 34.085, "lng": -118.61 },
     "status": "Active",
     "lastPing": "4:12pm PST",
     "firePercentage": 2,
@@ -21,6 +23,8 @@
     "probabilityVariance": 1.2,
     "standardDeviation": 0.9,
     "confidenceInterval": [43.8, 46.2],
+    "batteryStatus": 92,
+    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1522614262244-a5050837b92f?q=80&w=2819&auto=format&fit=crop"
   },
   {
@@ -33,6 +37,8 @@
     "probabilityVariance": 0.0,
     "standardDeviation": 0.0,
     "confidenceInterval": [100, 100],
+    "batteryStatus": 8,
+    "sensorHealth": "Abnormal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -45,6 +51,8 @@
     "probabilityVariance": 3.1,
     "standardDeviation": 2.2,
     "confidenceInterval": [74.9, 81.1],
+    "batteryStatus": 45,
+    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=2940&auto=format&fit=crop"
   },
   {
@@ -57,11 +65,13 @@
     "probabilityVariance": 0.0,
     "standardDeviation": 0.0,
     "confidenceInterval": [100, 100],
+    "batteryStatus": 5,
+    "sensorHealth": "Abnormal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
     "id": 6,
-    "position": { "lat": 34.068, "lng": -118.570 },
+    "position": { "lat": 34.068, "lng": -118.57 },
     "status": "Critical",
     "lastPing": "4:17pm PST",
     "firePercentage": 98,
@@ -69,6 +79,8 @@
     "probabilityVariance": 0.0,
     "standardDeviation": 0.0,
     "confidenceInterval": [100, 100],
+    "batteryStatus": 67,
+    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -81,11 +93,13 @@
     "probabilityVariance": 0.0,
     "standardDeviation": 0.0,
     "confidenceInterval": [100, 100],
+    "batteryStatus": 3,
+    "sensorHealth": "Abnormal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
     "id": 8,
-    "position": { "lat": 34.045, "lng": -118.590 },
+    "position": { "lat": 34.045, "lng": -118.59 },
     "status": "Warning",
     "lastPing": "4:19pm PST",
     "firePercentage": 75,
@@ -93,6 +107,8 @@
     "probabilityVariance": 1.5,
     "standardDeviation": 1.2,
     "confidenceInterval": [93.5, 96.5],
+    "batteryStatus": 34,
+    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -105,11 +121,13 @@
     "probabilityVariance": 2.1,
     "standardDeviation": 1.6,
     "confidenceInterval": [89.9, 94.1],
+    "batteryStatus": 15,
+    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
     "id": 10,
-    "position": { "lat": 34.110, "lng": -118.620 },
+    "position": { "lat": 34.11, "lng": -118.62 },
     "status": "Active",
     "lastPing": "4:22pm PST",
     "firePercentage": 15,
@@ -117,6 +135,8 @@
     "probabilityVariance": 1.8,
     "standardDeviation": 1.4,
     "confidenceInterval": [23.2, 26.8],
+    "batteryStatus": 83,
+    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1570574423797-257150a0a560?q=80&w=2940&auto=format&fit=crop"
   },
   {
@@ -129,11 +149,13 @@
     "probabilityVariance": 1.2,
     "standardDeviation": 0.9,
     "confidenceInterval": [16.8, 19.2],
+    "batteryStatus": 7,
+    "sensorHealth": "Abnormal",
     "imageUrl": "https://images.unsplash.com/photo-1522614262244-a5050837b92f?q=80&w=2819&auto=format&fit=crop"
   },
   {
     "id": 12,
-    "position": { "lat": 34.140, "lng": -118.650 },
+    "position": { "lat": 34.14, "lng": -118.65 },
     "status": "Active",
     "lastPing": "4:24pm PST",
     "firePercentage": 12,
@@ -141,6 +163,8 @@
     "probabilityVariance": 1.5,
     "standardDeviation": 1.1,
     "confidenceInterval": [20.5, 23.5],
+    "batteryStatus": 56,
+    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=2940&auto=format&fit=crop"
   }
 ]
