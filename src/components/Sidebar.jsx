@@ -1,18 +1,18 @@
-import React, { useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Card, 
-  CardContent, 
-  CardMedia, 
+import React, { useEffect } from "react";
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  CardMedia,
   Chip,
   Divider,
   Grid,
   Paper,
-  Button
-} from '@mui/material';
-import useAppStore from '../store/useAppStore';
-import weatherService from '../services/weatherService';
+  Button,
+} from "@mui/material";
+import useAppStore from "../store/useAppStore";
+import weatherService from "../services/weatherService";
 
 function Sidebar() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
@@ -20,39 +20,65 @@ function Sidebar() {
   const weatherData = useAppStore((state) => state.weatherData);
   const getWeatherData = useAppStore((state) => state.getWeatherData);
   const setWeatherData = useAppStore((state) => state.setWeatherData);
+  const markerDisplayMode = useAppStore((state) => state.markerDisplayMode);
+  const toggleMarkerDisplayMode = useAppStore(
+    (state) => state.toggleMarkerDisplayMode
+  );
 
   const getWeatherForSensor = (sensorId) => {
     // Return cached weather data directly
     const data = weatherData[sensorId];
-    console.log('Getting weather for sensor', sensorId, ':', data);
+    console.log("Getting weather for sensor", sensorId, ":", data);
     return data;
   };
 
   const getFireRiskColor = (probability) => {
-    if (probability === 100) return '#f44336'; // Red
-    if (probability >= 70) return '#ff9800'; // Orange
-    if (probability >= 40) return '#ffeb3b'; // Yellow
-    return '#4caf50'; // Green
+    if (probability === 100) return "#f44336"; // Red
+    if (probability >= 70) return "#ff9800"; // Orange
+    if (probability >= 40) return "#ffeb3b"; // Yellow
+    return "#4caf50"; // Green
   };
 
   const getFireRiskLabel = (probability) => {
-    if (probability === 100) return 'CRITICAL';
-    if (probability >= 70) return 'HIGH';
-    if (probability >= 40) return 'MODERATE';
-    return 'LOW';
+    if (probability === 100) return "CRITICAL";
+    if (probability >= 70) return "HIGH";
+    if (probability >= 40) return "MODERATE";
+    return "LOW";
+  };
+
+  const getBatteryColor = (batteryLevel) => {
+    if (batteryLevel < 10) return "#f44336"; // Red
+    if (batteryLevel < 25) return "#ff9800"; // Orange
+    if (batteryLevel < 50) return "#ffeb3b"; // Yellow
+    return "#4caf50"; // Green
+  };
+
+  const getHealthColor = (health) => {
+    return health === "Abnormal" ? "#f44336" : "#4caf50";
+  };
+
+  const calculateSensorHealth = (batteryStatus) => {
+    return batteryStatus < 10 ? "Abnormal" : "Normal";
   };
 
   // Auto-fetch weather data when sensor is selected
   useEffect(() => {
     if (selectedSensor) {
-      console.log('Sensor selected, fetching weather data for sensor', selectedSensor.id);
-      weatherService.fetchWeatherData(selectedSensor.position.lat, selectedSensor.position.lng)
-        .then(weatherData => {
-          console.log('Auto-fetch weather result:', weatherData);
+      console.log(
+        "Sensor selected, fetching weather data for sensor",
+        selectedSensor.id
+      );
+      weatherService
+        .fetchWeatherData(
+          selectedSensor.position.lat,
+          selectedSensor.position.lng
+        )
+        .then((weatherData) => {
+          console.log("Auto-fetch weather result:", weatherData);
           setWeatherData(selectedSensor.id, weatherData);
         })
-        .catch(error => {
-          console.error('Auto-fetch weather error:', error);
+        .catch((error) => {
+          console.error("Auto-fetch weather error:", error);
         });
     }
   }, [selectedSensor, setWeatherData]);
@@ -62,15 +88,54 @@ function Sidebar() {
       {/* Dashboard Details Panel */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom color="primary">
-            Dashboard Details
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+            }}
+          >
+            <Typography variant="h6" color="primary">
+              Dashboard Details
+            </Typography>
+            <Button
+              variant={
+                markerDisplayMode === "health" ? "contained" : "outlined"
+              }
+              size="small"
+              onClick={toggleMarkerDisplayMode}
+              sx={{ minWidth: 100 }}
+            >
+              {markerDisplayMode === "health" ? "Health Mode" : "Default Mode"}
+            </Button>
+          </Box>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mb: 2, display: "block" }}
+          >
+            {markerDisplayMode === "health"
+              ? "Health Mode: Green = Normal, Red = Abnormal (Battery < 10%)"
+              : "Default Mode: Standard Google Maps markers"}
           </Typography>
           {selectedSensor ? (
             <Box>
               <Grid container spacing={2}>
                 <Grid item xs={6}>
-                  <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'background.paper' }}>
-                    <Typography variant="h4" sx={{ color: getFireRiskColor(selectedSensor.fireProbability) }}>
+                  <Paper
+                    sx={{
+                      p: 1,
+                      textAlign: "center",
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        color: getFireRiskColor(selectedSensor.fireProbability),
+                      }}
+                    >
                       {selectedSensor.fireProbability}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
@@ -79,7 +144,13 @@ function Sidebar() {
                   </Paper>
                 </Grid>
                 <Grid item xs={6}>
-                  <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'background.paper' }}>
+                  <Paper
+                    sx={{
+                      p: 1,
+                      textAlign: "center",
+                      bgcolor: "background.paper",
+                    }}
+                  >
                     <Typography variant="h6" color="text.secondary">
                       {selectedSensor.status}
                     </Typography>
@@ -88,14 +159,61 @@ function Sidebar() {
                     </Typography>
                   </Paper>
                 </Grid>
+                <Grid item xs={6}>
+                  <Paper
+                    sx={{
+                      p: 1,
+                      textAlign: "center",
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        color: getBatteryColor(selectedSensor.batteryStatus),
+                      }}
+                    >
+                      {selectedSensor.batteryStatus}%
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Battery Status
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={6}>
+                  <Paper
+                    sx={{
+                      p: 1,
+                      textAlign: "center",
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: getHealthColor(selectedSensor.sensorHealth),
+                      }}
+                    >
+                      {selectedSensor.sensorHealth}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Sensor Health
+                    </Typography>
+                  </Paper>
+                </Grid>
               </Grid>
-              
+
               <Divider sx={{ my: 2 }} />
-              
-              <Chip 
+
+              <Chip
                 label={getFireRiskLabel(selectedSensor.fireProbability)}
-                color={selectedSensor.fireProbability === 100 ? 'error' : 
-                       selectedSensor.fireProbability >= 70 ? 'warning' : 'success'}
+                color={
+                  selectedSensor.fireProbability === 100
+                    ? "error"
+                    : selectedSensor.fireProbability >= 70
+                    ? "warning"
+                    : "success"
+                }
                 size="small"
                 sx={{ mb: 1 }}
               />
@@ -112,7 +230,9 @@ function Sidebar() {
       {selectedSensor ? (
         <Card sx={{ mb: 2 }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>Sensor #{selectedSensor.id}</Typography>
+            <Typography variant="h6" gutterBottom>
+              Sensor #{selectedSensor.id}
+            </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
               <strong>Status:</strong> {selectedSensor.status}
             </Typography>
@@ -120,10 +240,34 @@ function Sidebar() {
               <strong>Last Ping:</strong> {selectedSensor.lastPing}
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              <strong>Location:</strong> {selectedSensor.position.lat.toFixed(4)}, {selectedSensor.position.lng.toFixed(4)}
+              <strong>Location:</strong>{" "}
+              {selectedSensor.position.lat.toFixed(4)},{" "}
+              {selectedSensor.position.lng.toFixed(4)}
             </Typography>
-            <Typography variant="body2" sx={{ color: selectedSensor.fireProbability > 50 ? 'red' : 'inherit' }}>
-              <strong>Predicted Fire Probability:</strong> {selectedSensor.fireProbability}%
+            <Typography
+              variant="body2"
+              sx={{
+                color: selectedSensor.fireProbability > 50 ? "red" : "inherit",
+                mb: 1,
+              }}
+            >
+              <strong>Predicted Fire Probability:</strong>{" "}
+              {selectedSensor.fireProbability}%
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: getBatteryColor(selectedSensor.batteryStatus),
+                mb: 1,
+              }}
+            >
+              <strong>Battery Status:</strong> {selectedSensor.batteryStatus}%
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: getHealthColor(selectedSensor.sensorHealth) }}
+            >
+              <strong>Sensor Health:</strong> {selectedSensor.sensorHealth}
             </Typography>
           </CardContent>
         </Card>
@@ -131,7 +275,9 @@ function Sidebar() {
         <Card sx={{ mb: 2 }}>
           <CardContent>
             <Typography variant="h6">No Sensor Selected</Typography>
-            <Typography variant="body2">Click a sensor on the map to see its details.</Typography>
+            <Typography variant="body2">
+              Click a sensor on the map to see its details.
+            </Typography>
           </CardContent>
         </Card>
       )}
@@ -140,22 +286,36 @@ function Sidebar() {
       {selectedSensor && (
         <Card sx={{ mb: 2 }}>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
               <Typography variant="h6" color="primary">
                 Live Weather Conditions
               </Typography>
-              <Button 
-                variant="outlined" 
+              <Button
+                variant="outlined"
                 size="small"
                 onClick={() => {
-                  console.log('Manually fetching weather for sensor', selectedSensor.id);
-                  weatherService.fetchWeatherData(selectedSensor.position.lat, selectedSensor.position.lng)
-                    .then(weatherData => {
-                      console.log('Manual weather fetch result:', weatherData);
+                  console.log(
+                    "Manually fetching weather for sensor",
+                    selectedSensor.id
+                  );
+                  weatherService
+                    .fetchWeatherData(
+                      selectedSensor.position.lat,
+                      selectedSensor.position.lng
+                    )
+                    .then((weatherData) => {
+                      console.log("Manual weather fetch result:", weatherData);
                       setWeatherData(selectedSensor.id, weatherData);
                     })
-                    .catch(error => {
-                      console.error('Manual weather fetch error:', error);
+                    .catch((error) => {
+                      console.error("Manual weather fetch error:", error);
                     });
                 }}
               >
@@ -166,101 +326,130 @@ function Sidebar() {
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>Temperature:</strong> {getWeatherForSensor(selectedSensor.id).temperature}°F
+                    <strong>Temperature:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).temperature}°F
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>Humidity:</strong> {getWeatherForSensor(selectedSensor.id).humidity}%
+                    <strong>Humidity:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).humidity}%
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>Wind Speed:</strong> {getWeatherForSensor(selectedSensor.id).windSpeed} mph
+                    <strong>Wind Speed:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).windSpeed} mph
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>Wind Direction:</strong> {getWeatherForSensor(selectedSensor.id).windDirection}°
+                    <strong>Wind Direction:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).windDirection}°
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>Wind Gust:</strong> {getWeatherForSensor(selectedSensor.id).windGust} mph
+                    <strong>Wind Gust:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).windGust} mph
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>UV Index:</strong> {getWeatherForSensor(selectedSensor.id).uvIndex}
+                    <strong>UV Index:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).uvIndex}
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>Visibility:</strong> {getWeatherForSensor(selectedSensor.id).visibility} mi
+                    <strong>Visibility:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).visibility} mi
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>Cloud Cover:</strong> {getWeatherForSensor(selectedSensor.id).cloudCover}%
+                    <strong>Cloud Cover:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).cloudCover}%
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>Dew Point:</strong> {getWeatherForSensor(selectedSensor.id).dewPoint}°F
+                    <strong>Dew Point:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).dewPoint}°F
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>Heat Index:</strong> {getWeatherForSensor(selectedSensor.id).heatIndex}°F
+                    <strong>Heat Index:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).heatIndex}°F
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>Wind Chill:</strong> {getWeatherForSensor(selectedSensor.id).windChill}°F
+                    <strong>Wind Chill:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).windChill}°F
                   </Typography>
                 </Grid>
-                {getWeatherForSensor(selectedSensor.id).thunderstormProbability > 0 && (
+                {getWeatherForSensor(selectedSensor.id)
+                  .thunderstormProbability > 0 && (
                   <Grid item xs={12}>
                     <Typography variant="body2" color="warning.main">
-                      <strong>Thunderstorm Probability:</strong> {getWeatherForSensor(selectedSensor.id).thunderstormProbability}%
+                      <strong>Thunderstorm Probability:</strong>{" "}
+                      {
+                        getWeatherForSensor(selectedSensor.id)
+                          .thunderstormProbability
+                      }
+                      %
                     </Typography>
                   </Grid>
                 )}
-              <Grid item xs={12}>
-                <Typography variant="body2">
-                  <strong>Conditions:</strong> {getWeatherForSensor(selectedSensor.id).description}
-                </Typography>
+                <Grid item xs={12}>
+                  <Typography variant="body2">
+                    <strong>Conditions:</strong>{" "}
+                    {getWeatherForSensor(selectedSensor.id).description}
+                  </Typography>
+                </Grid>
+                {getWeatherForSensor(selectedSensor.id).airQuality && (
+                  <>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+                        Air Quality Data
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2">
+                        <strong>PM2.5:</strong>{" "}
+                        {
+                          getWeatherForSensor(selectedSensor.id).airQuality
+                            .pm2_5
+                        }{" "}
+                        μg/m³
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2">
+                        <strong>PM10:</strong>{" "}
+                        {getWeatherForSensor(selectedSensor.id).airQuality.pm10}{" "}
+                        μg/m³
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2">
+                        <strong>O₃:</strong>{" "}
+                        {getWeatherForSensor(selectedSensor.id).airQuality.o3}{" "}
+                        μg/m³
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2">
+                        <strong>NO₂:</strong>{" "}
+                        {getWeatherForSensor(selectedSensor.id).airQuality.no2}{" "}
+                        μg/m³
+                      </Typography>
+                    </Grid>
+                  </>
+                )}
               </Grid>
-              {getWeatherForSensor(selectedSensor.id).airQuality && (
-                <>
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
-                      Air Quality Data
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      <strong>PM2.5:</strong> {getWeatherForSensor(selectedSensor.id).airQuality.pm2_5} μg/m³
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      <strong>PM10:</strong> {getWeatherForSensor(selectedSensor.id).airQuality.pm10} μg/m³
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      <strong>O₃:</strong> {getWeatherForSensor(selectedSensor.id).airQuality.o3} μg/m³
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      <strong>NO₂:</strong> {getWeatherForSensor(selectedSensor.id).airQuality.no2} μg/m³
-                    </Typography>
-                  </Grid>
-                </>
-              )}
-            </Grid>
             ) : (
               <Typography variant="body2" color="text.secondary">
                 Fetching live weather data...
@@ -275,10 +464,12 @@ function Sidebar() {
         <CardContent>
           <Typography variant="h6">Drone Mission</Typography>
           <Typography variant="body2" sx={{ mb: 1 }}>
-            <strong>Location:</strong> {dronePosition.lat.toFixed(4)}, {dronePosition.lng.toFixed(4)}
+            <strong>Location:</strong> {dronePosition.lat.toFixed(4)},{" "}
+            {dronePosition.lng.toFixed(4)}
           </Typography>
           <Typography variant="body2" sx={{ mb: 1 }}>
-            <strong>Status:</strong> {selectedSensor ? 'Monitoring Sensor' : 'Navigating to Next Sensor'}
+            <strong>Status:</strong>{" "}
+            {selectedSensor ? "Monitoring Sensor" : "Navigating to Next Sensor"}
           </Typography>
           <Typography variant="body2" sx={{ mb: 2 }}>
             <strong>Mission:</strong> Autonomous sensor patrol route
