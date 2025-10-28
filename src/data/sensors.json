@@ -35,7 +35,7 @@
     "probabilityVariance": 0.0,
     "standardDeviation": 0.0,
     "confidenceInterval": [100, 100],
-    "batteryStatus": 8,
+    "batteryStatus": 38,
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -87,7 +87,7 @@
     "probabilityVariance": 0.0,
     "standardDeviation": 0.0,
     "confidenceInterval": [100, 100],
-    "batteryStatus": 3,
+    "batteryStatus": 0,
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -139,7 +139,7 @@
     "probabilityVariance": 1.2,
     "standardDeviation": 0.9,
     "confidenceInterval": [16.8, 19.2],
-    "batteryStatus": 7,
+    "batteryStatus": 17,
     "imageUrl": "https://images.unsplash.com/photo-1522614262244-a5050837b92f?q=80&w=2819&auto=format&fit=crop"
   },
   {
