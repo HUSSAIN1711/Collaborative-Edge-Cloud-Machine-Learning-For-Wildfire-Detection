@@ -10,7 +10,6 @@
     "standardDeviation": 1.8,
     "confidenceInterval": [82.5, 87.5],
     "batteryStatus": 78,
-    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1570574423797-257150a0a560?q=80&w=2940&auto=format&fit=crop"
   },
   {
@@ -24,7 +23,6 @@
     "standardDeviation": 0.9,
     "confidenceInterval": [43.8, 46.2],
     "batteryStatus": 92,
-    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1522614262244-a5050837b92f?q=80&w=2819&auto=format&fit=crop"
   },
   {
@@ -38,7 +36,6 @@
     "standardDeviation": 0.0,
     "confidenceInterval": [100, 100],
     "batteryStatus": 8,
-    "sensorHealth": "Abnormal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -52,7 +49,6 @@
     "standardDeviation": 2.2,
     "confidenceInterval": [74.9, 81.1],
     "batteryStatus": 45,
-    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=2940&auto=format&fit=crop"
   },
   {
@@ -66,7 +62,6 @@
     "standardDeviation": 0.0,
     "confidenceInterval": [100, 100],
     "batteryStatus": 5,
-    "sensorHealth": "Abnormal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -80,7 +75,6 @@
     "standardDeviation": 0.0,
     "confidenceInterval": [100, 100],
     "batteryStatus": 67,
-    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -94,7 +88,6 @@
     "standardDeviation": 0.0,
     "confidenceInterval": [100, 100],
     "batteryStatus": 3,
-    "sensorHealth": "Abnormal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -108,7 +101,6 @@
     "standardDeviation": 1.2,
     "confidenceInterval": [93.5, 96.5],
     "batteryStatus": 34,
-    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -122,7 +114,6 @@
     "standardDeviation": 1.6,
     "confidenceInterval": [89.9, 94.1],
     "batteryStatus": 15,
-    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1590422144342-365d95d512a8?q=80&w=2835&auto=format&fit=crop"
   },
   {
@@ -136,7 +127,6 @@
     "standardDeviation": 1.4,
     "confidenceInterval": [23.2, 26.8],
     "batteryStatus": 83,
-    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1570574423797-257150a0a560?q=80&w=2940&auto=format&fit=crop"
   },
   {
@@ -150,7 +140,6 @@
     "standardDeviation": 0.9,
     "confidenceInterval": [16.8, 19.2],
     "batteryStatus": 7,
-    "sensorHealth": "Abnormal",
     "imageUrl": "https://images.unsplash.com/photo-1522614262244-a5050837b92f?q=80&w=2819&auto=format&fit=crop"
   },
   {
@@ -164,7 +153,6 @@
     "standardDeviation": 1.1,
     "confidenceInterval": [20.5, 23.5],
     "batteryStatus": 56,
-    "sensorHealth": "Normal",
     "imageUrl": "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=2940&auto=format&fit=crop"
   }
 ]
