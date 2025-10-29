@@ -3,8 +3,14 @@ import { create } from "zustand";
 import sensorsData from "../data/sensors.json";
 import dronePathService from "../services/dronePathService";
 
+// Calculate sensorHealth for each sensor based on batteryStatus
+const processedSensors = sensorsData.map((sensor) => ({
+  ...sensor,
+  sensorHealth: sensor.batteryStatus < 10 ? "Abnormal" : "Normal",
+}));
+
 const useAppStore = create((set, get) => ({
-  sensors: sensorsData,
+  sensors: processedSensors,
   dronePath: [], // Will be generated dynamically
   selectedSensor: null,
   dronePosition: { lat: 34.07, lng: -118.58 }, // Default starting position
