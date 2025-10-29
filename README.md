@@ -7,6 +7,6 @@ This Repository is Created to track progress as we work on the project. Each sub
 Members:  
 Hussain Mahuvawala  
 Muhammad Shahmir Shamim  
-*put your name here*  
+Rich Soong 
 *put your name here*  
 Zayd Salem
