@@ -52,7 +52,7 @@ class WeatherService {
       
       // Using Google Maps Weather API
       const response = await fetch(
-        `${this.baseUrl}/currentConditions:lookup?key=${this.apiKey}&location.latitude=${lat}&location.longitude=${lng}`
+        `${this.baseUrl}/currentConditions:lookup?key=${this.apiKey}&location.latitude=${lat}&location.longitude=${lng}&units_system=IMPERIAL`
       );
       
       console.log('Google Weather API response status:', response.status);
