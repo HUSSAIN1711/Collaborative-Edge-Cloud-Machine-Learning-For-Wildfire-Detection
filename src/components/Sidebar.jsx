@@ -34,8 +34,8 @@ const WeatherDisplay = memo(({ weatherData, selectedSensor, setWeatherData, isLo
       });
   }, [selectedSensor, setWeatherData]);
 
-  // Reserve space for loading state to prevent layout shifts
-  if (!weatherData || isLoading) {
+  // Show the big spinner ONLY if we are loading AND have no data at all (initial load)
+  if (isLoading && !weatherData) {
     return (
       <Box
         sx={{
@@ -54,9 +54,49 @@ const WeatherDisplay = memo(({ weatherData, selectedSensor, setWeatherData, isLo
     );
   }
 
+  // If we have no data and are NOT loading (e.g., no sensor selected)
+  if (!weatherData) {
+    return (
+      <Box sx={{ minHeight: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Typography variant="body2" color="text.secondary">
+          No weather data available.
+        </Typography>
+      </Box>
+    );
+  }
+
+  // If we're here, we HAVE weatherData.
+  // We'll show the data, and if 'isLoading' is true, it means we are
+  // background-refreshing, so we'll show a subtle overlay.
   return (
-    <Fade in={!!weatherData} timeout={300}>
-      <Box>
+    <Box sx={{ position: 'relative' }}>
+      {/* Loading overlay for background refresh */}
+      {isLoading && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -16, // Cover CardContent padding
+            left: -16,
+            right: -16,
+            bottom: -16,
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1,
+            borderRadius: 1, // Match card's border radius
+            transition: 'opacity 0.2s ease-in-out'
+          }}
+        >
+          <CircularProgress size={24} sx={{ color: 'white' }} />
+        </Box>
+      )}
+
+      {/* The actual content, slightly faded during background load */}
+      <Box sx={{ 
+        transition: 'opacity 0.2s ease-in-out', 
+        opacity: isLoading ? 0.6 : 1 
+      }}>
         <Box
           sx={{
             display: "flex",
@@ -68,7 +108,12 @@ const WeatherDisplay = memo(({ weatherData, selectedSensor, setWeatherData, isLo
           <Typography variant="h6" color="primary">
             Live Weather Conditions
           </Typography>
-          <Button variant="outlined" size="small" onClick={handleRefresh}>
+          <Button 
+            variant="outlined" 
+            size="small" 
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
             Refresh
           </Button>
         </Box>
@@ -172,7 +217,7 @@ const WeatherDisplay = memo(({ weatherData, selectedSensor, setWeatherData, isLo
         )}
         </Grid>
       </Box>
-    </Fade>
+    </Box>
   );
 }, (prevProps, nextProps) => {
   // Only re-render if weather data actually changes
@@ -207,6 +252,11 @@ function Sidebar() {
   // Track loading state to show smooth transitions
   const [isLoadingWeather, setIsLoadingWeather] = useState(false);
   const [lastFetchedSensorId, setLastFetchedSensorId] = useState(null);
+  
+  // This state holds the data we actually show on screen.
+  // It won't be set to 'null' just because we're fetching new data.
+  // This implements the "stale-while-revalidate" pattern.
+  const [displayWeather, setDisplayWeather] = useState(null);
 
   const getFireRiskColor = (probability) => {
     if (probability === 100) return "#f44336"; // Red
@@ -237,22 +287,23 @@ function Sidebar() {
     return batteryStatus < 10 ? "Abnormal" : "Normal";
   };
 
-  // Track weather loading state - MapContainer handles fetching, we just show loading state
+  // Update weather loading and display logic with stale-while-revalidate pattern
   useEffect(() => {
     if (selectedSensor) {
-      // Only show loading if we don't have data and it's a new sensor
+      // Only show loading if we don't have data for this new sensor
       if (!currentWeatherData && selectedSensor.id !== lastFetchedSensorId) {
         setIsLoadingWeather(true);
         setLastFetchedSensorId(selectedSensor.id);
+        // *** We DO NOT set displayWeather to null here - keep showing old data ***
       } else if (currentWeatherData) {
-        // Small delay to ensure smooth transition
-        const timer = setTimeout(() => {
-          setIsLoadingWeather(false);
-        }, 100);
-        return () => clearTimeout(timer);
+        // When new data arrives, update the display and stop loading
+        setIsLoadingWeather(false);
+        setDisplayWeather(currentWeatherData); // Update what's on screen
       }
     } else {
+      // No sensor selected, clear everything
       setIsLoadingWeather(false);
+      setDisplayWeather(null);
     }
   }, [selectedSensor?.id, currentWeatherData, lastFetchedSensorId]);
 
@@ -469,7 +520,7 @@ function Sidebar() {
             }}
           >
             <WeatherDisplay
-              weatherData={currentWeatherData}
+              weatherData={displayWeather}
               selectedSensor={selectedSensor}
               setWeatherData={setWeatherData}
               isLoading={isLoadingWeather}
