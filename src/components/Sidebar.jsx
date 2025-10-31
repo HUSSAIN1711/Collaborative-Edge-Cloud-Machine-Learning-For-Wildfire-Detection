@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, memo, useState, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -10,27 +10,203 @@ import {
   Grid,
   Paper,
   Button,
+  CircularProgress,
+  Fade,
 } from "@mui/material";
 import useAppStore from "../store/useAppStore";
 import weatherService from "../services/weatherService";
 
+// Memoized Weather Display Component - only re-renders when weather data changes
+const WeatherDisplay = memo(({ weatherData, selectedSensor, setWeatherData, isLoading }) => {
+  const handleRefresh = useCallback(() => {
+    console.log("Manually fetching weather for sensor", selectedSensor.id);
+    weatherService
+      .fetchWeatherData(
+        selectedSensor.position.lat,
+        selectedSensor.position.lng
+      )
+      .then((data) => {
+        console.log("Manual weather fetch result:", data);
+        setWeatherData(selectedSensor.id, data);
+      })
+      .catch((error) => {
+        console.error("Manual weather fetch error:", error);
+      });
+  }, [selectedSensor, setWeatherData]);
+
+  // Reserve space for loading state to prevent layout shifts
+  if (!weatherData || isLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: 300, // Reserve space to prevent layout shift
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress size={24} sx={{ mb: 1 }} />
+        <Typography variant="body2" color="text.secondary">
+          Fetching live weather data...
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Fade in={!!weatherData} timeout={300}>
+      <Box>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Typography variant="h6" color="primary">
+            Live Weather Conditions
+          </Typography>
+          <Button variant="outlined" size="small" onClick={handleRefresh}>
+            Refresh
+          </Button>
+        </Box>
+        <Grid container spacing={2}>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>Temperature:</strong> {weatherData.temperature}°F
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>Humidity:</strong> {weatherData.humidity}%
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>Wind Speed:</strong> {weatherData.windSpeed} mph
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>Wind Direction:</strong> {weatherData.windDirection}°
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>Wind Gust:</strong> {weatherData.windGust} mph
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>UV Index:</strong> {weatherData.uvIndex}
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>Visibility:</strong> {weatherData.visibility} mi
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>Cloud Cover:</strong> {weatherData.cloudCover}%
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>Dew Point:</strong> {weatherData.dewPoint}°F
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>Heat Index:</strong> {weatherData.heatIndex}°F
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography variant="body2">
+            <strong>Wind Chill:</strong> {weatherData.windChill}°F
+          </Typography>
+        </Grid>
+        {weatherData.thunderstormProbability > 0 && (
+          <Grid item xs={12}>
+            <Typography variant="body2" color="warning.main">
+              <strong>Thunderstorm Probability:</strong>{" "}
+              {weatherData.thunderstormProbability}%
+            </Typography>
+          </Grid>
+        )}
+        <Grid item xs={12}>
+          <Typography variant="body2">
+            <strong>Conditions:</strong> {weatherData.description}
+          </Typography>
+        </Grid>
+        {weatherData.airQuality && (
+          <>
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+                Air Quality Data
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="body2">
+                <strong>PM2.5:</strong> {weatherData.airQuality.pm2_5} μg/m³
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="body2">
+                <strong>PM10:</strong> {weatherData.airQuality.pm10} μg/m³
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="body2">
+                <strong>O₃:</strong> {weatherData.airQuality.o3} μg/m³
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="body2">
+                <strong>NO₂:</strong> {weatherData.airQuality.no2} μg/m³
+              </Typography>
+            </Grid>
+          </>
+        )}
+        </Grid>
+      </Box>
+    </Fade>
+  );
+}, (prevProps, nextProps) => {
+  // Only re-render if weather data actually changes
+  // Compare by reference since we're using the same object reference from the store
+  return (
+    prevProps.weatherData === nextProps.weatherData &&
+    prevProps.selectedSensor?.id === nextProps.selectedSensor?.id &&
+    prevProps.isLoading === nextProps.isLoading
+  );
+});
+
+WeatherDisplay.displayName = "WeatherDisplay";
+
+// Custom hook to only subscribe to specific sensor's weather data
+const useSensorWeather = (sensorId) => {
+  return useAppStore((state) => 
+    sensorId ? state.weatherData[sensorId] || null : null
+  );
+};
+
 function Sidebar() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
   const dronePosition = useAppStore((state) => state.dronePosition);
-  const weatherData = useAppStore((state) => state.weatherData);
-  const getWeatherData = useAppStore((state) => state.getWeatherData);
+  // Only subscribe to the specific sensor's weather data - prevents re-renders for other sensors
+  const currentWeatherData = useSensorWeather(selectedSensor?.id);
   const setWeatherData = useAppStore((state) => state.setWeatherData);
   const markerDisplayMode = useAppStore((state) => state.markerDisplayMode);
   const toggleMarkerDisplayMode = useAppStore(
     (state) => state.toggleMarkerDisplayMode
   );
 
-  const getWeatherForSensor = (sensorId) => {
-    // Return cached weather data directly
-    const data = weatherData[sensorId];
-    console.log("Getting weather for sensor", sensorId, ":", data);
-    return data;
-  };
+  // Track loading state to show smooth transitions
+  const [isLoadingWeather, setIsLoadingWeather] = useState(false);
+  const [lastFetchedSensorId, setLastFetchedSensorId] = useState(null);
 
   const getFireRiskColor = (probability) => {
     if (probability === 100) return "#f44336"; // Red
@@ -61,27 +237,24 @@ function Sidebar() {
     return batteryStatus < 10 ? "Abnormal" : "Normal";
   };
 
-  // Auto-fetch weather data when sensor is selected
+  // Track weather loading state - MapContainer handles fetching, we just show loading state
   useEffect(() => {
     if (selectedSensor) {
-      console.log(
-        "Sensor selected, fetching weather data for sensor",
-        selectedSensor.id
-      );
-      weatherService
-        .fetchWeatherData(
-          selectedSensor.position.lat,
-          selectedSensor.position.lng
-        )
-        .then((weatherData) => {
-          console.log("Auto-fetch weather result:", weatherData);
-          setWeatherData(selectedSensor.id, weatherData);
-        })
-        .catch((error) => {
-          console.error("Auto-fetch weather error:", error);
-        });
+      // Only show loading if we don't have data and it's a new sensor
+      if (!currentWeatherData && selectedSensor.id !== lastFetchedSensorId) {
+        setIsLoadingWeather(true);
+        setLastFetchedSensorId(selectedSensor.id);
+      } else if (currentWeatherData) {
+        // Small delay to ensure smooth transition
+        const timer = setTimeout(() => {
+          setIsLoadingWeather(false);
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      setIsLoadingWeather(false);
     }
-  }, [selectedSensor, setWeatherData]);
+  }, [selectedSensor?.id, currentWeatherData, lastFetchedSensorId]);
 
   return (
     <Box>
@@ -284,177 +457,23 @@ function Sidebar() {
 
       {/* Weather Data */}
       {selectedSensor && (
-        <Card sx={{ mb: 2 }}>
-          <CardContent>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <Typography variant="h6" color="primary">
-                Live Weather Conditions
-              </Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => {
-                  console.log(
-                    "Manually fetching weather for sensor",
-                    selectedSensor.id
-                  );
-                  weatherService
-                    .fetchWeatherData(
-                      selectedSensor.position.lat,
-                      selectedSensor.position.lng
-                    )
-                    .then((weatherData) => {
-                      console.log("Manual weather fetch result:", weatherData);
-                      setWeatherData(selectedSensor.id, weatherData);
-                    })
-                    .catch((error) => {
-                      console.error("Manual weather fetch error:", error);
-                    });
-                }}
-              >
-                Refresh
-              </Button>
-            </Box>
-            {getWeatherForSensor(selectedSensor.id) ? (
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Temperature:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).temperature}°F
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Humidity:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).humidity}%
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Wind Speed:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).windSpeed} mph
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Wind Direction:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).windDirection}°
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Wind Gust:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).windGust} mph
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>UV Index:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).uvIndex}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Visibility:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).visibility} mi
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Cloud Cover:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).cloudCover}%
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Dew Point:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).dewPoint}°F
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Heat Index:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).heatIndex}°F
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Wind Chill:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).windChill}°F
-                  </Typography>
-                </Grid>
-                {getWeatherForSensor(selectedSensor.id)
-                  .thunderstormProbability > 0 && (
-                  <Grid item xs={12}>
-                    <Typography variant="body2" color="warning.main">
-                      <strong>Thunderstorm Probability:</strong>{" "}
-                      {
-                        getWeatherForSensor(selectedSensor.id)
-                          .thunderstormProbability
-                      }
-                      %
-                    </Typography>
-                  </Grid>
-                )}
-                <Grid item xs={12}>
-                  <Typography variant="body2">
-                    <strong>Conditions:</strong>{" "}
-                    {getWeatherForSensor(selectedSensor.id).description}
-                  </Typography>
-                </Grid>
-                {getWeatherForSensor(selectedSensor.id).airQuality && (
-                  <>
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
-                        Air Quality Data
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="body2">
-                        <strong>PM2.5:</strong>{" "}
-                        {
-                          getWeatherForSensor(selectedSensor.id).airQuality
-                            .pm2_5
-                        }{" "}
-                        μg/m³
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="body2">
-                        <strong>PM10:</strong>{" "}
-                        {getWeatherForSensor(selectedSensor.id).airQuality.pm10}{" "}
-                        μg/m³
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="body2">
-                        <strong>O₃:</strong>{" "}
-                        {getWeatherForSensor(selectedSensor.id).airQuality.o3}{" "}
-                        μg/m³
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="body2">
-                        <strong>NO₂:</strong>{" "}
-                        {getWeatherForSensor(selectedSensor.id).airQuality.no2}{" "}
-                        μg/m³
-                      </Typography>
-                    </Grid>
-                  </>
-                )}
-              </Grid>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                Fetching live weather data...
-              </Typography>
-            )}
+        <Card 
+          sx={{ 
+            mb: 2,
+            transition: 'all 0.3s ease-in-out', // Smooth card transitions
+          }}
+        >
+          <CardContent
+            sx={{
+              transition: 'opacity 0.3s ease-in-out', // Smooth content transitions
+            }}
+          >
+            <WeatherDisplay
+              weatherData={currentWeatherData}
+              selectedSensor={selectedSensor}
+              setWeatherData={setWeatherData}
+              isLoading={isLoadingWeather}
+            />
           </CardContent>
         </Card>
       )}

@@ -99,13 +99,34 @@ const useAppStore = create((set, get) => ({
   setSelectedSensor: (sensor) => set({ selectedSensor: sensor }),
   setDronePosition: (position) => set({ dronePosition: position }),
   setWeatherData: (sensorId, weatherData) =>
-    set((state) => ({
-      weatherData: { ...state.weatherData, [sensorId]: weatherData },
-      weatherCacheTimestamps: {
-        ...state.weatherCacheTimestamps,
-        [sensorId]: Date.now(),
-      },
-    })),
+    set((state) => {
+      // Only update if the data actually changed (prevent unnecessary re-renders)
+      const currentData = state.weatherData[sensorId];
+      
+      // Deep equality check for key fields to prevent duplicate updates
+      if (currentData) {
+        const hasChanged = 
+          currentData.temperature !== weatherData.temperature ||
+          currentData.humidity !== weatherData.humidity ||
+          currentData.windSpeed !== weatherData.windSpeed ||
+          currentData.description !== weatherData.description ||
+          currentData.windDirection !== weatherData.windDirection;
+        
+        if (!hasChanged) {
+          // Data hasn't meaningfully changed, skip update to prevent re-render
+          return state;
+        }
+      }
+      
+      // Update store with new weather data
+      return {
+        weatherData: { ...state.weatherData, [sensorId]: weatherData },
+        weatherCacheTimestamps: {
+          ...state.weatherCacheTimestamps,
+          [sensorId]: Date.now(),
+        },
+      };
+    }),
   getWeatherData: (sensorId) => {
     const state = get();
     const timestamp = state.weatherCacheTimestamps[sensorId];
