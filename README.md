@@ -8,5 +8,6 @@ Members:
 Hussain Mahuvawala  
 Muhammad Shahmir Shamim  
 Rich Soong 
-*put your name here*  
+Sidhartha Shah
 Zayd Salem
+
