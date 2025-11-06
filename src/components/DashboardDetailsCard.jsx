@@ -1,0 +1,191 @@
+import React from "react";
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
+  Grid,
+  Paper,
+  Button,
+} from "@mui/material";
+import useAppStore from "../store/useAppStore";
+
+function DashboardDetailsCard() {
+  const selectedSensor = useAppStore((state) => state.selectedSensor);
+  const markerDisplayMode = useAppStore((state) => state.markerDisplayMode);
+  const toggleMarkerDisplayMode = useAppStore(
+    (state) => state.toggleMarkerDisplayMode
+  );
+
+  const getFireRiskColor = (probability) => {
+    if (probability === 100) return "#f44336"; // Red
+    if (probability >= 70) return "#ff9800"; // Orange
+    if (probability >= 40) return "#ffeb3b"; // Yellow
+    return "#4caf50"; // Green
+  };
+
+  const getFireRiskLabel = (probability) => {
+    if (probability === 100) return "CRITICAL";
+    if (probability >= 70) return "HIGH";
+    if (probability >= 40) return "MODERATE";
+    return "LOW";
+  };
+
+  const getBatteryColor = (batteryLevel) => {
+    if (batteryLevel < 10) return "#f44336"; // Red
+    if (batteryLevel < 25) return "#ff9800"; // Orange
+    if (batteryLevel < 50) return "#ffeb3b"; // Yellow
+    return "#4caf50"; // Green
+  };
+
+  const getHealthColor = (health) => {
+    return health === "Abnormal" ? "#f44336" : "#4caf50";
+  };
+
+  return (
+    <Card sx={{ mb: 2 }}>
+      <CardContent>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Typography variant="h6" color="primary">
+            Dashboard Details
+          </Typography>
+          <Button
+            variant={
+              markerDisplayMode === "health" ? "contained" : "outlined"
+            }
+            size="small"
+            onClick={toggleMarkerDisplayMode}
+            sx={{ minWidth: 100 }}
+          >
+            {markerDisplayMode === "health" ? "Health Mode" : "Default Mode"}
+          </Button>
+        </Box>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mb: 2, display: "block" }}
+        >
+          {markerDisplayMode === "health"
+            ? "Health Mode: Green = Normal, Red = Abnormal (Battery < 10%)"
+            : "Default Mode: Standard Google Maps markers"}
+        </Typography>
+        {selectedSensor ? (
+          <Box>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Paper
+                  sx={{
+                    p: 1,
+                    textAlign: "center",
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      color: getFireRiskColor(selectedSensor.fireProbability),
+                    }}
+                  >
+                    {selectedSensor.fireProbability}%
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Predicted Fire Probability
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={6}>
+                <Paper
+                  sx={{
+                    p: 1,
+                    textAlign: "center",
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Typography variant="h6" color="text.secondary">
+                    {selectedSensor.status}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Status
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={6}>
+                <Paper
+                  sx={{
+                    p: 1,
+                    textAlign: "center",
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      color: getBatteryColor(selectedSensor.batteryStatus),
+                    }}
+                  >
+                    {selectedSensor.batteryStatus}%
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Battery Status
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={6}>
+                <Paper
+                  sx={{
+                    p: 1,
+                    textAlign: "center",
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color: getHealthColor(selectedSensor.sensorHealth),
+                    }}
+                  >
+                    {selectedSensor.sensorHealth}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Sensor Health
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Chip
+              label={getFireRiskLabel(selectedSensor.fireProbability)}
+              color={
+                selectedSensor.fireProbability === 100
+                  ? "error"
+                  : selectedSensor.fireProbability >= 70
+                  ? "warning"
+                  : "success"
+              }
+              size="small"
+              sx={{ mb: 1 }}
+            />
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Drone approaching sensor... Data will appear automatically.
+          </Typography>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default DashboardDetailsCard;
+
