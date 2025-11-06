@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import sensorsData from "../data/sensors.json";
 import dronePathService from "../services/dronePathService";
+import fireBoundaryService from "../services/fireBoundaryService";
 
 // Calculate sensorHealth for each sensor based on batteryStatus
 const processedSensors = sensorsData.map((sensor) => ({
@@ -12,6 +13,7 @@ const processedSensors = sensorsData.map((sensor) => ({
 const useAppStore = create((set, get) => ({
   sensors: processedSensors,
   dronePath: [], // Will be generated dynamically
+  fireBoundary: [], // Will be calculated dynamically from sensors
   selectedSensor: null,
   dronePosition: { lat: 34.07, lng: -118.58 }, // Default starting position
   weatherData: {}, // Cache for weather data by sensor ID
@@ -22,6 +24,11 @@ const useAppStore = create((set, get) => ({
     pathDensity: 0.01,
     prioritizeCritical: true,
     includeWaypoints: true,
+  },
+  fireBoundaryOptions: {
+    probabilityThreshold: 70,
+    marginMiles: 0.15,
+    smoothingFactor: 0.5, // Increased for more visible smoothing
   },
 
   // Initialize drone path on store creation
@@ -37,6 +44,8 @@ const useAppStore = create((set, get) => ({
         dronePosition: path[0] || { lat: 34.07, lng: -118.58 },
       });
       console.log("Drone path initialized with", path.length, "points");
+      // Also calculate fire boundary
+      get().calculateFireBoundary();
     } catch (error) {
       console.error("Error initializing drone path:", error);
       // Fallback to default path
@@ -62,8 +71,26 @@ const useAppStore = create((set, get) => ({
       );
       set({ dronePath: path });
       console.log("Drone path regenerated with", path.length, "points");
+      // Also recalculate fire boundary
+      get().calculateFireBoundary();
     } catch (error) {
       console.error("Error regenerating drone path:", error);
+    }
+  },
+
+  // Calculate fire boundary from sensors
+  calculateFireBoundary: () => {
+    try {
+      const state = get();
+      const boundary = fireBoundaryService.calculateFireBoundary(
+        state.sensors,
+        state.fireBoundaryOptions
+      );
+      set({ fireBoundary: boundary });
+      console.log("Fire boundary calculated with", boundary.length, "points");
+    } catch (error) {
+      console.error("Error calculating fire boundary:", error);
+      set({ fireBoundary: [] });
     }
   },
 
@@ -197,6 +224,14 @@ const useAppStore = create((set, get) => ({
 
   // Set specific marker display mode
   setMarkerDisplayMode: (mode) => set({ markerDisplayMode: mode }),
+
+  // Update fire boundary options
+  updateFireBoundaryOptions: (options) => {
+    set((state) => ({
+      fireBoundaryOptions: { ...state.fireBoundaryOptions, ...options },
+    }));
+    get().calculateFireBoundary();
+  },
 }));
 
 export default useAppStore;

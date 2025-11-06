@@ -6,7 +6,6 @@ import {
   Polygon,
 } from "@react-google-maps/api";
 import useAppStore from "../store/useAppStore";
-import fireBoundaryData from "../data/fireBoundary.json";
 import weatherService from "../services/weatherService.js";
 
 const containerStyle = {
@@ -29,6 +28,7 @@ function MapContainer() {
     sensors,
     dronePath,
     dronePosition,
+    fireBoundary,
     setSelectedSensor,
     setDronePosition,
     setWeatherData,
@@ -302,17 +302,19 @@ function MapContainer() {
           />
         )}
 
-      {/* Render Fire Boundary Polygon */}
-      <Polygon
-        paths={fireBoundaryData}
-        options={{
-          fillColor: "#FFBF00",
-          fillOpacity: 0.2, // More subtle
-          strokeColor: "#FF0000",
-          strokeOpacity: 0.6,
-          strokeWeight: 2,
-        }}
-      />
+      {/* Render Fire Boundary Polygon - dynamically calculated from sensors */}
+      {fireBoundary && fireBoundary.length > 0 && (
+        <Polygon
+          paths={fireBoundary}
+          options={{
+            fillColor: "#FFBF00",
+            fillOpacity: 0.2, // More subtle
+            strokeColor: "#FF0000",
+            strokeOpacity: 0.6,
+            strokeWeight: 2,
+          }}
+        />
+      )}
     </GoogleMap>
   ) : (
     <></>

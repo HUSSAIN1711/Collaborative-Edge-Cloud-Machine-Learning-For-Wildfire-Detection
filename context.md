@@ -69,7 +69,7 @@ Each sensor contains:
 - `lastPing`: Timestamp string
 - `temperature`: Temperature in Fahrenheit
 - `humidity`: Humidity percentage
-- `firePercentage`: Fire risk percentage (0-100)
+- `fireProbability`: Fire probability/risk percentage (0-100)
 - `imageUrl`: Unsplash image URL for live feed
 
 ### Drone Path (dronePath.json)

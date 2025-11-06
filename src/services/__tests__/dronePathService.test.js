@@ -106,14 +106,12 @@ describe('Integration Tests', () => {
         id: 1,
         position: { lat: 34.098, lng: -118.595 },
         status: 'Critical',
-        firePercentage: 95,
         fireProbability: 100
       },
       {
         id: 2,
         position: { lat: 34.085, lng: -118.610 },
         status: 'Warning',
-        firePercentage: 75,
         fireProbability: 95
       }
     ];
