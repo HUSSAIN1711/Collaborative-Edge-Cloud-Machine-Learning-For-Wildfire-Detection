@@ -10,7 +10,44 @@ import useAppStore from "../store/useAppStore";
 
 function DroneFeedCard() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
-  const dronePosition = useAppStore((state) => state.dronePosition);
+  const selectedDroneId = useAppStore((state) => state.selectedDroneId);
+  const drones = useAppStore((state) => state.drones);
+  
+  const selectedDrone = drones.find((drone) => drone.id === selectedDroneId) || null;
+
+  if (!selectedDrone) {
+    return (
+      <Card
+        sx={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          bgcolor: "background.paper",
+        }}
+      >
+        <Box
+          sx={{
+            p: 1.5,
+            bgcolor: "background.default",
+            borderBottom: 1,
+            borderColor: "divider",
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+            Drone Mission
+          </Typography>
+        </Box>
+        <CardContent sx={{ flexGrow: 1, p: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            No drone selected
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const dronePosition = selectedDrone.position || { lat: 0, lng: 0 };
+  const zone = selectedDrone.zone;
 
   return (
     <Card
@@ -30,13 +67,16 @@ function DroneFeedCard() {
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-          Drone Mission
+          {selectedDrone.name} Mission
         </Typography>
       </Box>
       <CardContent sx={{ flexGrow: 1, p: 2 }}>
         <Typography variant="body2" sx={{ mb: 1 }}>
           <strong>Location:</strong> {dronePosition.lat.toFixed(4)},{" "}
           {dronePosition.lng.toFixed(4)}
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          <strong>Zone:</strong> {zone?.name || "Unknown"} ({zone?.sensors.length || 0} sensors)
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
           <strong>Status:</strong>{" "}

@@ -13,9 +13,12 @@ const containerStyle = {
   height: "100%",
 };
 
-const center = {
-  lat: 34.07,
-  lng: -118.58,
+// Center will be calculated dynamically from first drone's zone center
+const getDefaultCenter = (drones) => {
+  if (drones && drones.length > 0 && drones[0].zone && drones[0].zone.center) {
+    return drones[0].zone.center;
+  }
+  return { lat: 34.07, lng: -118.58 };
 };
 
 function MapContainer() {
@@ -26,73 +29,167 @@ function MapContainer() {
 
   const {
     sensors,
-    dronePath,
-    dronePosition,
-    fireBoundary,
+    drones,
+    selectedDroneId,
     setSelectedSensor,
-    setDronePosition,
+    updateDronePosition,
+    updateDronePathIndex,
     setWeatherData,
     getWeatherData,
-    initializeDronePath,
-    getPathStatistics,
+    initializeZonesAndDrones,
     markerDisplayMode,
   } = useAppStore();
+  
+  const selectedDrone = drones.find((drone) => drone.id === selectedDroneId) || null;
 
-  const [pathIndex, setPathIndex] = useState(0);
   const [activeSensor, setActiveSensor] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [mapCenter, setMapCenter] = useState(getDefaultCenter([]));
   const mapRef = useRef(null);
   const proximityCheckTimeoutRef = useRef(null);
+  const animationIntervalsRef = useRef({});
 
-  // Initialize drone path on component mount
+  // Initialize zones and drones on component mount
   useEffect(() => {
     try {
       if (!isInitialized && sensors.length > 0) {
-        console.log("Initializing drone path with", sensors.length, "sensors");
-        initializeDronePath();
+        console.log("Initializing zones and drones with", sensors.length, "sensors");
+        initializeZonesAndDrones();
         setIsInitialized(true);
       }
     } catch (error) {
-      console.error("Error initializing drone path:", error);
+      console.error("Error initializing zones and drones:", error);
       setIsInitialized(true); // Prevent infinite retry
     }
-  }, [sensors, initializeDronePath, isInitialized]);
+  }, [sensors, initializeZonesAndDrones, isInitialized]);
 
-  // Drone animation logic with error handling
+  // Update map center only when selected drone changes (not on position updates)
   useEffect(() => {
-    if (!dronePath || dronePath.length === 0) {
-      console.warn("No drone path available for animation");
+    // Only recenter when selectedDroneId actually changes, not when drones array updates
+    if (!selectedDroneId || !mapRef.current) {
       return;
     }
 
+    // Get current drones from store to find the selected one
+    const currentDrones = useAppStore.getState().drones;
+    if (currentDrones.length === 0) {
+      return;
+    }
+
+    // Find the selected drone from current drones array
+    const currentSelectedDrone = currentDrones.find((d) => d.id === selectedDroneId);
+    
+    // Center on zone center, not drone position
+    if (currentSelectedDrone && currentSelectedDrone.zone && currentSelectedDrone.zone.center) {
+      const zoneCenter = currentSelectedDrone.zone.center;
+      setMapCenter(zoneCenter);
+      mapRef.current.setCenter(zoneCenter);
+    } else if (currentDrones[0] && currentDrones[0].zone && currentDrones[0].zone.center) {
+      // Fallback to first drone's zone center
+      const zoneCenter = currentDrones[0].zone.center;
+      setMapCenter(zoneCenter);
+      mapRef.current.setCenter(zoneCenter);
+    }
+  }, [selectedDroneId]); // ONLY depend on selectedDroneId - not drones array!
+
+  // Animate only the selected drone
+  useEffect(() => {
+    // Clear all existing intervals
+    Object.values(animationIntervalsRef.current).forEach((interval) => {
+      clearInterval(interval);
+    });
+    animationIntervalsRef.current = {};
+
+    // Only animate if we have a selected drone
+    if (!selectedDroneId || !selectedDrone) {
+      return;
+    }
+
+    const drone = selectedDrone;
+    
+    if (!drone.path || drone.path.length === 0) {
+      console.warn(`No path available for ${drone.id}`);
+      return;
+    }
+
+    const droneId = drone.id;
+    const dronePath = drone.path; // Capture path reference
+
+    console.log(`Starting animation for selected drone: ${droneId}`);
+
+    // Ensure drone position is synced with pathIndex when first selected
+    const currentPathIndex = drone.pathIndex || 0;
+    if (dronePath && dronePath.length > 0 && currentPathIndex < dronePath.length) {
+      const currentPosition = dronePath[currentPathIndex];
+      if (currentPosition && 
+          typeof currentPosition.lat === "number" && 
+          typeof currentPosition.lng === "number") {
+        // Sync position to current pathIndex
+        // Only update if position is different to avoid unnecessary updates
+        const currentPos = drone.position;
+        if (!currentPos || 
+            Math.abs(currentPos.lat - currentPosition.lat) > 0.0001 ||
+            Math.abs(currentPos.lng - currentPosition.lng) > 0.0001) {
+          updateDronePosition(droneId, currentPosition);
+        }
+      }
+    }
+
+    // Start animation interval for the selected drone
     const interval = setInterval(() => {
       try {
-        setPathIndex((prevIndex) => {
-          const nextIndex = (prevIndex + 1) % dronePath.length;
-          const nextPosition = dronePath[nextIndex];
+        // Get current state inside the interval to get the latest pathIndex
+        const currentDrones = useAppStore.getState().drones;
+        const currentDrone = currentDrones.find((d) => d.id === droneId);
+        
+        if (!currentDrone) {
+          console.warn(`Drone ${droneId} not found in state`);
+          return;
+        }
 
-          if (
-            nextPosition &&
-            typeof nextPosition.lat === "number" &&
-            typeof nextPosition.lng === "number"
-          ) {
-            setDronePosition(nextPosition);
-            return nextIndex;
-          } else {
-            console.warn("Invalid drone position:", nextPosition);
-            return prevIndex;
-          }
-        });
+        // Check if this drone is still selected
+        const currentSelectedDroneId = useAppStore.getState().selectedDroneId;
+        if (currentSelectedDroneId !== droneId) {
+          // Drone was deselected, stop animation
+          clearInterval(interval);
+          delete animationIntervalsRef.current[droneId];
+          return;
+        }
+
+        const currentPathIndex = currentDrone.pathIndex || 0;
+        const nextIndex = (currentPathIndex + 1) % dronePath.length;
+        const nextPosition = dronePath[nextIndex];
+
+        if (
+          nextPosition &&
+          typeof nextPosition.lat === "number" &&
+          typeof nextPosition.lng === "number"
+        ) {
+          updateDronePosition(droneId, nextPosition);
+          updateDronePathIndex(droneId, nextIndex);
+        } else {
+          console.warn(`Invalid position for ${droneId}:`, nextPosition);
+        }
       } catch (error) {
-        console.error("Error in drone animation:", error);
+        console.error(`Error animating ${droneId}:`, error);
       }
     }, 2000);
 
-    return () => clearInterval(interval);
-  }, [dronePath, setDronePosition]);
+    animationIntervalsRef.current[droneId] = interval;
 
-  // Check for drone proximity to sensors with error handling and debouncing
+    // Cleanup on unmount or when selected drone changes
+    return () => {
+      if (animationIntervalsRef.current[droneId]) {
+        clearInterval(animationIntervalsRef.current[droneId]);
+        delete animationIntervalsRef.current[droneId];
+      }
+    };
+  }, [selectedDroneId, selectedDrone, updateDronePosition, updateDronePathIndex]);
+
+  // Check for selected drone proximity to sensors with error handling and debouncing
   useEffect(() => {
+    if (!selectedDrone) return;
+
     // Clear any existing timeout
     if (proximityCheckTimeoutRef.current) {
       clearTimeout(proximityCheckTimeoutRef.current);
@@ -102,16 +199,20 @@ function MapContainer() {
     proximityCheckTimeoutRef.current = setTimeout(() => {
       const checkProximity = () => {
         try {
+          const dronePosition = selectedDrone.position;
           if (!dronePosition || !sensors || sensors.length === 0) {
             return;
           }
+
+          // Get sensors in the selected drone's zone
+          const zoneSensors = selectedDrone.zone?.sensors || sensors;
 
           // First, do a quick distance check to see if drone is anywhere near any sensor
           let isNearAnySensor = false;
           let nearestSensor = null;
           let nearestDistance = Infinity;
 
-          sensors.forEach((sensor) => {
+          zoneSensors.forEach((sensor) => {
             try {
               if (
                 !sensor.position ||
@@ -162,7 +263,7 @@ function MapContainer() {
           console.log("Drone is near sensors, checking detailed proximity...");
           let nearSensor = null;
 
-          sensors.forEach((sensor) => {
+          zoneSensors.forEach((sensor) => {
             try {
               if (
                 !sensor.position ||
@@ -243,18 +344,20 @@ function MapContainer() {
       }
     };
   }, [
-    dronePosition,
+    selectedDroneId,
+    drones,
     sensors,
     setSelectedSensor,
     getWeatherData,
     setWeatherData,
     activeSensor,
+    selectedDrone,
   ]);
 
   return isLoaded ? (
     <GoogleMap
       mapContainerStyle={containerStyle}
-      center={center}
+      center={mapCenter}
       zoom={13}
       options={{ mapTypeId: "satellite" }}
       onLoad={(map) => {
@@ -268,7 +371,7 @@ function MapContainer() {
           position={sensor.position}
           onClick={() => setSelectedSensor(sensor)}
           icon={
-            markerDisplayMode === "health"
+            markerDisplayMode === "health" && window.google && window.google.maps
               ? {
                   path: window.google.maps.SymbolPath.CIRCLE,
                   scale: 12,
@@ -284,37 +387,62 @@ function MapContainer() {
         />
       ))}
 
-      {/* Render Drone Marker with error handling */}
-      {dronePosition &&
-        typeof dronePosition.lat === "number" &&
-        typeof dronePosition.lng === "number" && (
+      {/* Render All Drone Markers */}
+      {drones.map((drone) => {
+        if (
+          !drone.position ||
+          typeof drone.position.lat !== "number" ||
+          typeof drone.position.lng !== "number"
+        ) {
+          return null;
+        }
+
+        const isSelected = drone.id === selectedDroneId;
+        const pathIndex = drone.pathIndex || 0;
+
+        return (
           <Marker
-            position={dronePosition}
-            icon={{
-              path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-              scale: 8,
-              strokeColor: "#FFFF00",
-              fillColor: "#FFFF00",
-              fillOpacity: 0.8,
-              strokeWeight: 2,
-              rotation: calculateDroneRotation(dronePath, pathIndex),
+            key={drone.id}
+            position={drone.position}
+            icon={
+              window.google && window.google.maps
+                ? {
+                    path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                    scale: isSelected ? 10 : 8,
+                    strokeColor: isSelected ? "#00FFFF" : "#FFFF00",
+                    fillColor: isSelected ? "#00FFFF" : "#FFFF00",
+                    fillOpacity: isSelected ? 1.0 : 0.8,
+                    strokeWeight: isSelected ? 3 : 2,
+                    rotation: calculateDroneRotation(drone.path, pathIndex),
+                  }
+                : undefined
+            }
+          />
+        );
+      })}
+
+      {/* Render Fire Boundary Polygons for each drone */}
+      {drones.map((drone) => {
+        if (!drone.fireBoundary || drone.fireBoundary.length === 0) {
+          return null;
+        }
+
+        const isSelected = drone.id === selectedDroneId;
+
+        return (
+          <Polygon
+            key={`boundary-${drone.id}`}
+            paths={drone.fireBoundary}
+            options={{
+              fillColor: isSelected ? "#FFBF00" : "#FF8800",
+              fillOpacity: isSelected ? 0.3 : 0.2,
+              strokeColor: isSelected ? "#FF0000" : "#FF6600",
+              strokeOpacity: isSelected ? 0.8 : 0.6,
+              strokeWeight: isSelected ? 3 : 2,
             }}
           />
-        )}
-
-      {/* Render Fire Boundary Polygon - dynamically calculated from sensors */}
-      {fireBoundary && fireBoundary.length > 0 && (
-        <Polygon
-          paths={fireBoundary}
-          options={{
-            fillColor: "#FFBF00",
-            fillOpacity: 0.2, // More subtle
-            strokeColor: "#FF0000",
-            strokeOpacity: 0.6,
-            strokeWeight: 2,
-          }}
-        />
-      )}
+        );
+      })}
     </GoogleMap>
   ) : (
     <></>
