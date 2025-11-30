@@ -4,6 +4,7 @@ import sensorsData from "../data/sensors.json";
 import sensorZonesData from "../data/sensorZones.json";
 import dronePathService from "../services/dronePathService";
 import fireBoundaryService from "../services/fireBoundaryService";
+import { calculateZoneCenter, calculateZoneBounds } from "../utils/zoneUtils";
 
 // Calculate sensorHealth for each sensor based on batteryStatus
 const processedSensors = sensorsData.map((sensor) => ({
@@ -47,25 +48,9 @@ const useAppStore = create((set, get) => ({
           .map(id => sensorMap.get(id))
           .filter(sensor => sensor !== undefined); // Filter out any missing sensors
         
-        // Calculate zone center from sensor positions
-        const center = zoneSensors.length > 0
-          ? {
-              lat: zoneSensors.reduce((sum, s) => sum + s.position.lat, 0) / zoneSensors.length,
-              lng: zoneSensors.reduce((sum, s) => sum + s.position.lng, 0) / zoneSensors.length,
-            }
-          : { lat: 0, lng: 0 };
-        
-        // Calculate zone bounds
-        const lats = zoneSensors.map(s => s.position.lat);
-        const lngs = zoneSensors.map(s => s.position.lng);
-        const bounds = zoneSensors.length > 0
-          ? {
-              north: Math.max(...lats),
-              south: Math.min(...lats),
-              east: Math.max(...lngs),
-              west: Math.min(...lngs),
-            }
-          : { north: 0, south: 0, east: 0, west: 0 };
+        // Calculate zone center and bounds from sensor positions
+        const center = calculateZoneCenter(zoneSensors);
+        const bounds = calculateZoneBounds(zoneSensors);
         
         return {
           id: zoneDef.id,

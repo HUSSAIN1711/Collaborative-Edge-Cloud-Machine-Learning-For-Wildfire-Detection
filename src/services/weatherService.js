@@ -1,3 +1,5 @@
+import { calculateDistance, isDroneNearSensor as checkDroneProximity } from "../utils/geoUtils";
+
 // Weather service for fetching weather data from Google Maps Weather API
 class WeatherService {
   constructor() {
@@ -137,25 +139,14 @@ class WeatherService {
     }
   }
 
-  // Calculate distance between two coordinates
+  // Calculate distance between two coordinates (delegates to geoUtils)
   calculateDistance(lat1, lng1, lat2, lng2) {
-    const R = 3959; // Earth's radius in miles
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
+    return calculateDistance(lat1, lng1, lat2, lng2);
   }
 
-  // Check if drone is within proximity of a sensor
+  // Check if drone is within proximity of a sensor (delegates to geoUtils)
   isDroneNearSensor(dronePosition, sensorPosition, proximityMiles = 0.1) {
-    const distance = this.calculateDistance(
-      dronePosition.lat, dronePosition.lng,
-      sensorPosition.lat, sensorPosition.lng
-    );
-    return distance <= proximityMiles;
+    return checkDroneProximity(dronePosition, sensorPosition, proximityMiles);
   }
 }
 

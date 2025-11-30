@@ -1,6 +1,8 @@
 // Fire Boundary Calculation Service
 // Calculates dynamic fire boundaries from sensor data with smoothing
 
+import { hasValidSensorPosition } from '../utils/geoUtils';
+
 class FireBoundaryService {
   constructor() {
     this.boundaryCache = new Map();
@@ -22,13 +24,11 @@ class FireBoundaryService {
     } = options;
 
     try {
-      // Filter sensors with high fire probability
+      // Filter sensors with high fire probability and valid positions
       const highRiskSensors = sensors.filter(
         (sensor) =>
           sensor.fireProbability >= probabilityThreshold &&
-          sensor.position &&
-          typeof sensor.position.lat === "number" &&
-          typeof sensor.position.lng === "number"
+          hasValidSensorPosition(sensor)
       );
 
       if (highRiskSensors.length < minSensors) {

@@ -1,6 +1,9 @@
 // Sensor Zone Clustering Service
 // Groups sensors into geographic zones using distance-based clustering
 
+import { calculateDistance, hasValidSensorPosition } from './geoUtils';
+import { calculateZoneCenter, calculateZoneBounds } from './zoneUtils';
+
 class SensorZoneService {
   /**
    * Group sensors into zones based on geographic proximity
@@ -20,12 +23,7 @@ class SensorZoneService {
 
     try {
       // Filter out sensors without valid positions
-      const validSensors = sensors.filter(
-        (sensor) =>
-          sensor.position &&
-          typeof sensor.position.lat === "number" &&
-          typeof sensor.position.lng === "number"
-      );
+      const validSensors = sensors.filter(hasValidSensorPosition);
 
       if (validSensors.length === 0) {
         return [];
@@ -44,8 +42,8 @@ class SensorZoneService {
         id: `zone-${index + 1}`,
         name: `Zone ${index + 1}`,
         sensors: zone.sensors,
-        center: this.calculateZoneCenter(zone.sensors),
-        bounds: this.calculateZoneBounds(zone.sensors),
+        center: calculateZoneCenter(zone.sensors),
+        bounds: calculateZoneBounds(zone.sensors),
       }));
     } catch (error) {
       console.error("Error grouping sensors into zones:", error);
@@ -55,8 +53,8 @@ class SensorZoneService {
           id: "zone-1",
           name: "Zone 1",
           sensors: sensors,
-          center: this.calculateZoneCenter(sensors),
-          bounds: this.calculateZoneBounds(sensors),
+          center: calculateZoneCenter(sensors),
+          bounds: calculateZoneBounds(sensors),
         },
       ];
     }
@@ -79,7 +77,7 @@ class SensorZoneService {
       for (let j = i + 1; j < sensors.length; j++) {
         if (assigned.has(j)) continue;
 
-        const distance = this.calculateDistance(
+        const distance = calculateDistance(
           sensors[i].position.lat,
           sensors[i].position.lng,
           sensors[j].position.lat,
@@ -98,68 +96,6 @@ class SensorZoneService {
     return clusters;
   }
 
-  /**
-   * Calculate the center point of a zone
-   */
-  calculateZoneCenter(sensors) {
-    if (sensors.length === 0) {
-      return { lat: 0, lng: 0 };
-    }
-
-    const sum = sensors.reduce(
-      (acc, sensor) => ({
-        lat: acc.lat + sensor.position.lat,
-        lng: acc.lng + sensor.position.lng,
-      }),
-      { lat: 0, lng: 0 }
-    );
-
-    return {
-      lat: sum.lat / sensors.length,
-      lng: sum.lng / sensors.length,
-    };
-  }
-
-  /**
-   * Calculate bounding box for a zone
-   */
-  calculateZoneBounds(sensors) {
-    if (sensors.length === 0) {
-      return {
-        north: 0,
-        south: 0,
-        east: 0,
-        west: 0,
-      };
-    }
-
-    const lats = sensors.map((s) => s.position.lat);
-    const lngs = sensors.map((s) => s.position.lng);
-
-    return {
-      north: Math.max(...lats),
-      south: Math.min(...lats),
-      east: Math.max(...lngs),
-      west: Math.min(...lngs),
-    };
-  }
-
-  /**
-   * Calculate distance between two coordinates in miles
-   */
-  calculateDistance(lat1, lng1, lat2, lng2) {
-    const R = 3959; // Earth's radius in miles
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLng = ((lng2 - lng1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
 }
 
 export default new SensorZoneService();

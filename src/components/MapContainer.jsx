@@ -7,6 +7,8 @@ import {
 } from "@react-google-maps/api";
 import useAppStore from "../store/useAppStore";
 import weatherService from "../services/weatherService.js";
+import { isValidPosition, isDroneNearSensor } from "../utils/geoUtils";
+import { createSensorIcon, createDroneIcon, calculateDroneRotation } from "../utils/mapUtils";
 
 const containerStyle = {
   width: "100%",
@@ -121,9 +123,7 @@ function MapContainer() {
     const currentPathIndex = drone.pathIndex || 0;
     if (dronePath && dronePath.length > 0 && currentPathIndex < dronePath.length) {
       const currentPosition = dronePath[currentPathIndex];
-      if (currentPosition && 
-          typeof currentPosition.lat === "number" && 
-          typeof currentPosition.lng === "number") {
+      if (isValidPosition(currentPosition)) {
         // Sync position to current pathIndex
         // Only update if position is different to avoid unnecessary updates
         const currentPos = drone.position;
@@ -160,11 +160,7 @@ function MapContainer() {
         const nextIndex = (currentPathIndex + 1) % dronePath.length;
         const nextPosition = dronePath[nextIndex];
 
-        if (
-          nextPosition &&
-          typeof nextPosition.lat === "number" &&
-          typeof nextPosition.lng === "number"
-        ) {
+        if (isValidPosition(nextPosition)) {
           updateDronePosition(droneId, nextPosition);
           updateDronePathIndex(droneId, nextIndex);
         } else {
@@ -214,11 +210,7 @@ function MapContainer() {
 
           zoneSensors.forEach((sensor) => {
             try {
-              if (
-                !sensor.position ||
-                typeof sensor.position.lat !== "number" ||
-                typeof sensor.position.lng !== "number"
-              ) {
+              if (!isValidPosition(sensor.position)) {
                 console.warn("Invalid sensor position:", sensor);
                 return;
               }
@@ -265,21 +257,11 @@ function MapContainer() {
 
           zoneSensors.forEach((sensor) => {
             try {
-              if (
-                !sensor.position ||
-                typeof sensor.position.lat !== "number" ||
-                typeof sensor.position.lng !== "number"
-              ) {
+              if (!isValidPosition(sensor.position)) {
                 return;
               }
 
-              if (
-                weatherService.isDroneNearSensor(
-                  dronePosition,
-                  sensor.position,
-                  0.5
-                )
-              ) {
+              if (isDroneNearSensor(dronePosition, sensor.position, 0.5)) {
                 console.log(`Drone is near sensor ${sensor.id}`);
                 nearSensor = sensor;
                 setActiveSensor(sensor);
@@ -371,52 +353,28 @@ function MapContainer() {
           position={sensor.position}
           onClick={() => setSelectedSensor(sensor)}
           icon={
-            markerDisplayMode === "health" && window.google && window.google.maps
-              ? {
-                  path: window.google.maps.SymbolPath.CIRCLE,
-                  scale: 12,
-                  fillColor:
-                    sensor.sensorHealth === "Abnormal" ? "#f44336" : "#4caf50",
-                  fillOpacity: 0.8,
-                  strokeColor:
-                    sensor.sensorHealth === "Abnormal" ? "#d32f2f" : "#2e7d32",
-                  strokeWeight: 2,
-                }
-              : undefined // Use default marker
+            markerDisplayMode === "health"
+              ? createSensorIcon(sensor.sensorHealth)
+              : undefined
           }
         />
       ))}
 
       {/* Render All Drone Markers */}
       {drones.map((drone) => {
-        if (
-          !drone.position ||
-          typeof drone.position.lat !== "number" ||
-          typeof drone.position.lng !== "number"
-        ) {
+        if (!isValidPosition(drone.position)) {
           return null;
         }
 
         const isSelected = drone.id === selectedDroneId;
         const pathIndex = drone.pathIndex || 0;
+        const rotation = calculateDroneRotation(drone.path, pathIndex);
 
         return (
           <Marker
             key={drone.id}
             position={drone.position}
-            icon={
-              window.google && window.google.maps
-                ? {
-                    path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                    scale: isSelected ? 10 : 8,
-                    strokeColor: isSelected ? "#00FFFF" : "#FFFF00",
-                    fillColor: isSelected ? "#00FFFF" : "#FFFF00",
-                    fillOpacity: isSelected ? 1.0 : 0.8,
-                    strokeWeight: isSelected ? 3 : 2,
-                    rotation: calculateDroneRotation(drone.path, pathIndex),
-                  }
-                : undefined
-            }
+            icon={createDroneIcon(isSelected, rotation)}
           />
         );
       })}
@@ -447,28 +405,6 @@ function MapContainer() {
   ) : (
     <></>
   );
-}
-
-// Helper function to calculate drone rotation based on movement direction
-function calculateDroneRotation(dronePath, pathIndex) {
-  try {
-    if (!dronePath || dronePath.length < 2) return 0;
-
-    const current = dronePath[pathIndex];
-    const nextIndex = (pathIndex + 1) % dronePath.length;
-    const next = dronePath[nextIndex];
-
-    if (!current || !next) return 0;
-
-    const deltaLat = next.lat - current.lat;
-    const deltaLng = next.lng - current.lng;
-
-    const angle = (Math.atan2(deltaLng, deltaLat) * 180) / Math.PI;
-    return isNaN(angle) ? 0 : angle;
-  } catch (error) {
-    console.error("Error calculating drone rotation:", error);
-    return 0;
-  }
 }
 
 export default React.memo(MapContainer);
