@@ -9,6 +9,10 @@ import {
 } from "@mui/material";
 import useAppStore from "../store/useAppStore";
 
+/**
+ * Component that provides a dropdown selector for choosing which drone to view
+ * Displays drone name, zone, and sensor count for each option
+ */
 function DroneSelector() {
   const drones = useAppStore((state) => state.drones);
   const selectedDroneId = useAppStore((state) => state.selectedDroneId);

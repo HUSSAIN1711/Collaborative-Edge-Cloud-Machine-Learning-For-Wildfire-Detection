@@ -6,12 +6,19 @@ import dronePathService from "../services/dronePathService";
 import fireBoundaryService from "../services/fireBoundaryService";
 import { calculateZoneCenter, calculateZoneBounds } from "../utils/zoneUtils";
 
-// Calculate sensorHealth for each sensor based on batteryStatus
+/**
+ * Calculate sensorHealth for each sensor based on batteryStatus
+ * Sensors with battery < 10% are marked as "Abnormal"
+ */
 const processedSensors = sensorsData.map((sensor) => ({
   ...sensor,
   sensorHealth: sensor.batteryStatus < 10 ? "Abnormal" : "Normal",
 }));
 
+/**
+ * Main application store using Zustand
+ * Manages sensors, drones, zones, weather data, and UI state
+ */
 const useAppStore = create((set, get) => ({
   sensors: processedSensors,
   zones: [], // Array of zone objects with sensors
@@ -30,10 +37,16 @@ const useAppStore = create((set, get) => ({
   fireBoundaryOptions: {
     probabilityThreshold: 70,
     marginMiles: 0.15,
-    smoothingFactor: 0.5, // Increased for more visible smoothing
+    smoothingFactor: 0.5, // Smoothing factor (0-1, higher = more smooth)
+    maxInfluenceMiles: 2.0, // Maximum distance sensors can influence
+    gridResolution: 0.01, // Grid resolution in degrees
+    decayExponent: 2.5, // Gradual decay exponent (higher = more gradual transition)
   },
 
-  // Initialize zones and drones based on predefined sensor zones
+  /**
+   * Initialize zones and drones based on predefined sensor zones
+   * Creates zones from sensor zone definitions and generates drones with paths
+   */
   initializeZonesAndDrones: () => {
     try {
       const state = get();
@@ -60,9 +73,7 @@ const useAppStore = create((set, get) => ({
           bounds: bounds,
         };
       });
-      
-      console.log(`Initialized ${zones.length} zones from predefined definitions`);
-      
+
       // Create a drone for each zone
       const drones = zones.map((zone, index) => {
         const droneId = `drone${index + 1}`;
@@ -71,7 +82,7 @@ const useAppStore = create((set, get) => ({
         const path = zone.sensors.length > 0
           ? dronePathService.generateDronePath(
               zone.sensors,
-              state.pathGenerationOptions
+        state.pathGenerationOptions
             )
           : [];
         
@@ -81,7 +92,7 @@ const useAppStore = create((set, get) => ({
               zone.sensors,
               state.fireBoundaryOptions
             )
-          : [];
+          : { highRiskBoundary: [], mediumRiskBoundary: [] };
         
         // Start position: first sensor in zone, or zone center, or default
         const startPosition = zone.sensors.length > 0
@@ -109,7 +120,6 @@ const useAppStore = create((set, get) => ({
         selectedDroneId: selectedDroneId,
       });
       
-      console.log(`Initialized ${drones.length} drones`);
     } catch (error) {
       console.error("Error initializing zones and drones:", error);
       set({
@@ -120,7 +130,10 @@ const useAppStore = create((set, get) => ({
     }
   },
 
-  // Regenerate paths and boundaries for all drones
+  /**
+   * Regenerate paths and boundaries for all drones
+   * Useful when path generation options change
+   */
   regenerateAllDronePaths: () => {
     try {
       const state = get();
@@ -128,10 +141,10 @@ const useAppStore = create((set, get) => ({
         const zone = state.zones.find((z) => z.id === drone.zoneId);
         if (!zone || zone.sensors.length === 0) return drone;
         
-        const path = dronePathService.generateDronePath(
+      const path = dronePathService.generateDronePath(
           zone.sensors,
-          state.pathGenerationOptions
-        );
+        state.pathGenerationOptions
+      );
         
         const fireBoundary = fireBoundaryService.calculateFireBoundary(
           zone.sensors,
@@ -148,13 +161,16 @@ const useAppStore = create((set, get) => ({
       });
       
       set({ drones: updatedDrones });
-      console.log("All drone paths regenerated");
     } catch (error) {
       console.error("Error regenerating drone paths:", error);
     }
   },
 
-  // Update a specific drone's position
+  /**
+   * Update a specific drone's position
+   * @param {string} droneId - ID of the drone to update
+   * @param {Object} position - New position {lat, lng}
+   */
   updateDronePosition: (droneId, position) => {
     set((state) => ({
       drones: state.drones.map((drone) =>
@@ -163,7 +179,11 @@ const useAppStore = create((set, get) => ({
     }));
   },
 
-  // Update a specific drone's path index
+  /**
+   * Update a specific drone's path index
+   * @param {string} droneId - ID of the drone to update
+   * @param {number} pathIndex - New path index
+   */
   updateDronePathIndex: (droneId, pathIndex) => {
     set((state) => ({
       drones: state.drones.map((drone) =>
@@ -172,7 +192,10 @@ const useAppStore = create((set, get) => ({
     }));
   },
 
-  // Update path generation options
+  /**
+   * Update path generation options and regenerate all paths
+   * @param {Object} newOptions - New path generation options
+   */
   updatePathOptions: (newOptions) => {
     set((state) => ({
       pathGenerationOptions: { ...state.pathGenerationOptions, ...newOptions },
@@ -181,7 +204,10 @@ const useAppStore = create((set, get) => ({
     get().regenerateAllDronePaths();
   },
 
-  // Add new sensor and regenerate zones/drones
+  /**
+   * Add new sensor and regenerate zones/drones
+   * @param {Object} sensor - Sensor object to add
+   */
   addSensor: (sensor) => {
     set((state) => ({
       sensors: [...state.sensors, sensor],
@@ -189,7 +215,11 @@ const useAppStore = create((set, get) => ({
     get().initializeZonesAndDrones();
   },
 
-  // Update sensor and regenerate zones/drones
+  /**
+   * Update sensor and regenerate zones/drones
+   * @param {string} sensorId - ID of the sensor to update
+   * @param {Object} updates - Partial sensor object with updates
+   */
   updateSensor: (sensorId, updates) => {
     set((state) => ({
       sensors: state.sensors.map((sensor) =>
@@ -199,7 +229,10 @@ const useAppStore = create((set, get) => ({
     get().initializeZonesAndDrones();
   },
 
-  // Remove sensor and regenerate zones/drones
+  /**
+   * Remove sensor and regenerate zones/drones
+   * @param {string} sensorId - ID of the sensor to remove
+   */
   removeSensor: (sensorId) => {
     set((state) => ({
       sensors: state.sensors.filter((sensor) => sensor.id !== sensorId),
@@ -207,20 +240,41 @@ const useAppStore = create((set, get) => ({
     get().initializeZonesAndDrones();
   },
 
+  /**
+   * Set the selected sensor
+   * @param {Object|null} sensor - Sensor object to select, or null to deselect
+   */
   setSelectedSensor: (sensor) => set({ selectedSensor: sensor }),
+
+  /**
+   * Set the selected drone ID
+   * @param {string|null} droneId - Drone ID to select, or null to deselect
+   */
   setSelectedDroneId: (droneId) => set({ selectedDroneId: droneId }),
-  
-  // Get the currently selected drone
+
+  /**
+   * Get the currently selected drone
+   * @returns {Object|null} Selected drone object or null
+   */
   getSelectedDrone: () => {
     const state = get();
     return state.drones.find((drone) => drone.id === state.selectedDroneId) || null;
   },
   
-  // Get drone by ID
+  /**
+   * Get drone by ID
+   * @param {string} droneId - Drone ID to find
+   * @returns {Object|null} Drone object or null
+   */
   getDroneById: (droneId) => {
     const state = get();
     return state.drones.find((drone) => drone.id === droneId) || null;
   },
+  /**
+   * Set weather data for a sensor
+   * @param {string} sensorId - Sensor ID
+   * @param {Object} weatherData - Weather data object
+   */
   setWeatherData: (sensorId, weatherData) =>
     set((state) => {
       // Only update if the data actually changed (prevent unnecessary re-renders)
@@ -250,6 +304,11 @@ const useAppStore = create((set, get) => ({
         },
       };
     }),
+  /**
+   * Get weather data for a sensor (checks cache validity)
+   * @param {string} sensorId - Sensor ID
+   * @returns {Object|null} Weather data object or null if expired/missing
+   */
   getWeatherData: (sensorId) => {
     const state = get();
     const timestamp = state.weatherCacheTimestamps[sensorId];
@@ -258,10 +317,8 @@ const useAppStore = create((set, get) => ({
 
     // Return cached data if it's less than an hour old
     if (timestamp && now - timestamp < oneHour) {
-      console.log(`Using cached weather data for sensor ${sensorId}`);
       return state.weatherData[sensorId];
     }
-    console.log(`No valid cached weather data for sensor ${sensorId}`);
     return null; // Indicates data needs to be fetched
   },
 
@@ -278,7 +335,9 @@ const useAppStore = create((set, get) => ({
       };
     }),
 
-  // Clear all weather cache
+  /**
+   * Clear all weather cache
+   */
   clearAllWeatherData: () =>
     set({
       weatherData: {},
@@ -296,7 +355,11 @@ const useAppStore = create((set, get) => ({
     return dronePathService.getPathStatistics(drone.path);
   },
 
-  // Calculate sensor health based on battery status
+  /**
+   * Calculate sensor health based on battery status
+   * @param {number} batteryStatus - Battery percentage (0-100)
+   * @returns {string} Health status ('Normal' or 'Abnormal')
+   */
   calculateSensorHealth: (batteryStatus) => {
     return batteryStatus < 10 ? "Abnormal" : "Normal";
   },
@@ -310,17 +373,25 @@ const useAppStore = create((set, get) => ({
       })),
     })),
 
-  // Toggle marker display mode between health-based and default
+  /**
+   * Toggle marker display mode between health-based and default
+   */
   toggleMarkerDisplayMode: () =>
     set((state) => ({
       markerDisplayMode:
         state.markerDisplayMode === "health" ? "default" : "health",
     })),
 
-  // Set specific marker display mode
+  /**
+   * Set specific marker display mode
+   * @param {string} mode - Display mode ('health' or 'default')
+   */
   setMarkerDisplayMode: (mode) => set({ markerDisplayMode: mode }),
 
-  // Update fire boundary options
+  /**
+   * Update fire boundary options and regenerate boundaries
+   * @param {Object} options - New fire boundary options
+   */
   updateFireBoundaryOptions: (options) => {
     set((state) => ({
       fireBoundaryOptions: { ...state.fireBoundaryOptions, ...options },

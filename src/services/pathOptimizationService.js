@@ -90,8 +90,6 @@ class PathOptimizationService {
     path.push(currentSensor.position);
     visited.add(currentSensor.id);
 
-    console.log(`Starting optimization with ${sortedSensors.length} sensors`);
-
     // Find nearest unvisited sensor
     while (visited.size < sortedSensors.length) {
       let nearestSensor = null;
@@ -112,7 +110,6 @@ class PathOptimizationService {
       }
 
       if (nearestSensor) {
-        console.log(`Adding sensor ${nearestSensor.id} (${nearestSensor.status}) to path`);
         path.push(nearestSensor.position);
         visited.add(nearestSensor.id);
         currentSensor = nearestSensor;
@@ -122,14 +119,12 @@ class PathOptimizationService {
       }
     }
 
-    console.log(`Optimization complete: ${visited.size}/${sortedSensors.length} sensors included`);
     
     // Ensure all sensors are included
     if (visited.size < sortedSensors.length) {
       console.warn('Not all sensors included in optimization, adding remaining sensors');
       for (const sensor of sortedSensors) {
         if (!visited.has(sensor.id)) {
-          console.log(`Adding missed sensor ${sensor.id} (${sensor.status})`);
           path.push(sensor.position);
           visited.add(sensor.id);
         }
@@ -141,8 +136,10 @@ class PathOptimizationService {
 
   /**
    * Genetic algorithm optimization (simplified version)
+   * @param {Array} sensors - Array of sensor objects
+   * @param {boolean} _prioritizeCritical - Whether to prioritize critical sensors (unused in this algorithm)
    */
-  geneticOptimization(sensors, prioritizeCritical) {
+  geneticOptimization(sensors, _prioritizeCritical) {
     const populationSize = 20;
     const generations = 50;
     const mutationRate = 0.1;
@@ -169,8 +166,10 @@ class PathOptimizationService {
 
   /**
    * Simulated annealing optimization
+   * @param {Array} sensors - Array of sensor objects
+   * @param {boolean} _prioritizeCritical - Whether to prioritize critical sensors (unused in this algorithm)
    */
-  simulatedAnnealingOptimization(sensors, prioritizeCritical) {
+  simulatedAnnealingOptimization(sensors, _prioritizeCritical) {
     const initialTemp = 1000;
     const coolingRate = 0.95;
     const minTemp = 1;
@@ -350,17 +349,20 @@ class PathOptimizationService {
 
   /**
    * Generate return path to starting point
+   * @param {Array} path - Path array
+   * @returns {Array} Return path array
    */
   generateReturnPath(path) {
     if (path.length < 2) return [];
-    
+
     const start = path[0];
-    const end = path[path.length - 1];
-    
-    return [{
-      lat: start.lat,
-      lng: start.lng
-    }];
+
+    return [
+      {
+        lat: start.lat,
+        lng: start.lng,
+      },
+    ];
   }
 
   /**

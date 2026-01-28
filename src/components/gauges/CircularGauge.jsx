@@ -4,10 +4,7 @@ import { Box, Typography, CircularProgress } from "@mui/material";
 function CircularGauge({ value, min, max, label, unit, color, size = 100 }) {
   // Ensure value is within bounds for the calculation
   const calculatedValue = Math.min(max, Math.max(min, value));
-  const percentage = Math.min(100, Math.max(0, ((calculatedValue - min) / (max - min)) * 100));
-  
-  // Adjusted size for the inner content to ensure it fits perfectly
-  const innerSize = size * 0.9; 
+  const percentage = Math.min(100, Math.max(0, ((calculatedValue - min) / (max - min)) * 100)); 
 
   return (
     <Box 

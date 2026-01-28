@@ -10,70 +10,427 @@ class FireBoundaryService {
   }
 
   /**
-   * Calculate fire boundary from sensors with fireProbability >= 70%
+   * Calculate fire probability at a given point based on distance from sensors
+   * Uses exponential decay for gradual, smooth probability decrease
+   * Takes the maximum probability from all sensors (not averaged)
+   * @param {Object} point - Point {lat, lng}
+   * @param {Array} sensors - Array of sensor objects with position and fireProbability
+   * @param {number} maxInfluenceMiles - Maximum distance a sensor can influence (default: 2 miles)
+   * @param {number} decayExponent - Exponent for decay curve (higher = more gradual, default: 2 for quadratic)
+   * @returns {number} Interpolated fire probability (0-100)
+   */
+  calculateProbabilityAtPoint(point, sensors, maxInfluenceMiles = 2.0, decayExponent = 2.0) {
+    if (!sensors || sensors.length === 0) return 0;
+
+    let maxProbability = 0;
+
+    sensors.forEach((sensor) => {
+      if (!hasValidSensorPosition(sensor)) return;
+      
+      // Skip sensors with 0% fire probability - they shouldn't influence boundaries
+      const sensorProbability = sensor.fireProbability || 0;
+      if (sensorProbability <= 0) return;
+
+      const distance = this.distance(point, sensor.position);
+      
+      // Skip if beyond max influence distance
+      if (distance > maxInfluenceMiles) return;
+
+      // Exponential/Quadratic decay: probability decreases gradually with distance
+      // At distance 0: probability = sensorProbability (100% if sensor says 100%)
+      // At distance maxInfluenceMiles: probability = 0
+      // Formula: probability = sensorProbability * (1 - (distance / maxInfluenceMiles))^decayExponent
+      // Using decayExponent = 2 creates a quadratic decay (smoother than linear)
+      // Higher values (e.g., 2.5, 3) create even more gradual decay
+      const normalizedDistance = distance / maxInfluenceMiles;
+      const decayFactor = Math.max(0, Math.pow(1 - normalizedDistance, decayExponent));
+      const decayedProbability = sensorProbability * decayFactor;
+      
+      // Take the maximum probability from all sensors
+      maxProbability = Math.max(maxProbability, decayedProbability);
+    });
+
+    return Math.min(100, maxProbability);
+  }
+
+  /**
+   * Calculate fire boundaries with probability-based regions
+   * Returns two regions: high risk (>=85%) and medium risk (>=50%)
    * @param {Array} sensors - Array of sensor objects with position and fireProbability
    * @param {Object} options - Configuration options
-   * @returns {Array} Array of coordinate objects {lat, lng} forming a smooth boundary
+   * @returns {Object} Object with highRiskBoundary and mediumRiskBoundary arrays
    */
   calculateFireBoundary(sensors, options = {}) {
     const {
-      probabilityThreshold = 70,
       marginMiles = 0.15, // Margin around sensors in miles
       smoothingFactor = 0.5, // Smoothing factor (0-1, higher = more smooth)
-      minSensors = 2, // Minimum sensors needed to create boundary
+      minSensors = 1, // Minimum sensors needed to create boundary
+      maxInfluenceMiles = 2.0, // Maximum distance sensors can influence
+      gridResolution = 0.01, // Grid resolution in degrees (~0.7 miles, for sampling)
+      decayExponent = 2.0, // Decay exponent for gradual probability decrease (higher = more gradual)
     } = options;
 
     try {
-      // Filter sensors with high fire probability and valid positions
-      const highRiskSensors = sensors.filter(
-        (sensor) =>
-          sensor.fireProbability >= probabilityThreshold &&
-          hasValidSensorPosition(sensor)
+      // Filter sensors with valid positions AND non-zero fire probability
+      // Exclude sensors with 0% or very low fire probability as they shouldn't affect boundaries
+      const validSensors = sensors.filter((sensor) =>
+        hasValidSensorPosition(sensor) && (sensor.fireProbability || 0) > 0
       );
 
-      if (highRiskSensors.length < minSensors) {
-        console.log(
-          `Not enough high-risk sensors (${highRiskSensors.length}) for boundary calculation`
-        );
-        return [];
+      if (validSensors.length < minSensors) {
+        return { highRiskBoundary: [], mediumRiskBoundary: [] };
       }
 
       // Check cache
-      const cacheKey = this.getCacheKey(highRiskSensors, options);
+      const cacheKey = this.getCacheKey(validSensors, options);
       const cached = this.boundaryCache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
         return cached.boundary;
       }
 
-      // Extract sensor positions
-      const points = highRiskSensors.map((sensor) => ({
-        lat: sensor.position.lat,
-        lng: sensor.position.lng,
-      }));
+      // Calculate bounding box for grid sampling (only using sensors with fire probability > 0)
+      // This ensures 0% sensors don't affect the boundary area
+      const bounds = this.calculateBounds(validSensors);
+      const padding = maxInfluenceMiles / 69; // Convert miles to approximate degrees
+      
+      // Expand bounds with padding
+      const expandedBounds = {
+        north: bounds.north + padding,
+        south: bounds.south - padding,
+        east: bounds.east + padding,
+        west: bounds.west - padding,
+      };
 
-      // Calculate convex hull
-      const hull = this.calculateConvexHull(points);
+      // Sample points on a grid and calculate probabilities
+      const gridPoints = [];
+      const probabilityGrid = [];
+      
+      // Use finer grid resolution near sensors (where probability is high)
+      const fineGridResolution = gridResolution * 0.2; // Much finer grid near sensors
+      const coarseGridResolution = gridResolution; // Coarser grid further away
+      
+      // First, add sensor positions themselves and nearby points with fine grid
+      // Only include sensors with fire probability > 0
+      validSensors.forEach((sensor) => {
+        const sensorPoint = { lat: sensor.position.lat, lng: sensor.position.lng };
+        const sensorProbability = sensor.fireProbability || 0;
+        
+        // Skip sensors with 0% probability
+        if (sensorProbability <= 0) return;
+        
+        // Add exact sensor position
+        gridPoints.push(sensorPoint);
+        probabilityGrid.push(sensorProbability);
+        
+        // Add fine grid around sensor (within maxInfluenceMiles)
+        const sensorInfluenceRadius = maxInfluenceMiles / 69; // Convert to degrees
+        for (let lat = sensor.position.lat - sensorInfluenceRadius; 
+             lat <= sensor.position.lat + sensorInfluenceRadius; 
+             lat += fineGridResolution) {
+          for (let lng = sensor.position.lng - sensorInfluenceRadius; 
+               lng <= sensor.position.lng + sensorInfluenceRadius; 
+               lng += fineGridResolution) {
+            const point = { lat, lng };
+            const dist = this.distance(point, sensor.position);
+            
+            // Only include points within influence radius
+            if (dist <= maxInfluenceMiles) {
+              // Check if we already have this point (avoid duplicates)
+              const isDuplicate = gridPoints.some((p) => 
+                Math.abs(p.lat - point.lat) < 0.0001 && 
+                Math.abs(p.lng - point.lng) < 0.0001
+              );
+              
+              if (!isDuplicate) {
+                const probability = this.calculateProbabilityAtPoint(
+                  point,
+                  validSensors,
+                  maxInfluenceMiles,
+                  decayExponent
+                );
+                gridPoints.push(point);
+                probabilityGrid.push(probability);
+              }
+            }
+          }
+        }
+      });
+      
+      // Then sample remaining area with coarser grid
+      for (let lat = expandedBounds.south; lat <= expandedBounds.north; lat += coarseGridResolution) {
+        for (let lng = expandedBounds.west; lng <= expandedBounds.east; lng += coarseGridResolution) {
+          const point = { lat, lng };
+          
+          // Skip if already included in fine grid
+          const isDuplicate = gridPoints.some((p) => 
+            Math.abs(p.lat - point.lat) < 0.0001 && 
+            Math.abs(p.lng - point.lng) < 0.0001
+          );
+          
+          if (isDuplicate) continue;
+          
+          const probability = this.calculateProbabilityAtPoint(
+            point,
+            validSensors,
+            maxInfluenceMiles,
+            decayExponent
+          );
+          
+          gridPoints.push(point);
+          probabilityGrid.push(probability);
+        }
+      }
 
-      // Apply margin/buffer around the hull
-      const bufferedHull = this.applyBuffer(hull, marginMiles);
+      // Find contour points for 85% and 50% thresholds
+      const highRiskPoints = [];
+      const mediumRiskPoints = [];
 
-      // Smooth the boundary with curves
-      const smoothedBoundary = this.smoothBoundary(
-        bufferedHull,
-        smoothingFactor
-      );
+      // First, ALWAYS include sensor positions with >= 85% probability in high-risk points
+      // This ensures sensors with high fire probability are always included
+      validSensors.forEach((sensor) => {
+        const sensorProbability = sensor.fireProbability || 0;
+        if (sensorProbability >= 85) {
+          const sensorPoint = { lat: sensor.position.lat, lng: sensor.position.lng };
+          // Check if not already added
+          const alreadyAdded = highRiskPoints.some((p) => 
+            Math.abs(p.lat - sensorPoint.lat) < 0.0001 && 
+            Math.abs(p.lng - sensorPoint.lng) < 0.0001
+          );
+          if (!alreadyAdded) {
+            highRiskPoints.push(sensorPoint);
+          }
+        }
+        if (sensorProbability >= 50) {
+          const sensorPoint = { lat: sensor.position.lat, lng: sensor.position.lng };
+          // Check if not already added
+          const alreadyAdded = mediumRiskPoints.some((p) => 
+            Math.abs(p.lat - sensorPoint.lat) < 0.0001 && 
+            Math.abs(p.lng - sensorPoint.lng) < 0.0001
+          );
+          if (!alreadyAdded) {
+            mediumRiskPoints.push(sensorPoint);
+          }
+        }
+      });
+
+      // Then add grid points that meet the thresholds
+      for (let i = 0; i < gridPoints.length; i++) {
+        const probability = probabilityGrid[i];
+        const point = gridPoints[i];
+
+        // Add points that meet the thresholds (but skip if it's a sensor position already added)
+        if (probability >= 85) {
+          const isSensorPosition = validSensors.some((s) => 
+            Math.abs(s.position.lat - point.lat) < 0.0001 && 
+            Math.abs(s.position.lng - point.lng) < 0.0001 &&
+            (s.fireProbability || 0) >= 85
+          );
+          if (!isSensorPosition) {
+            highRiskPoints.push(point);
+          }
+        }
+        if (probability >= 50) {
+          const isSensorPosition = validSensors.some((s) => 
+            Math.abs(s.position.lat - point.lat) < 0.0001 && 
+            Math.abs(s.position.lng - point.lng) < 0.0001 &&
+            (s.fireProbability || 0) >= 50
+          );
+          if (!isSensorPosition) {
+            mediumRiskPoints.push(point);
+          }
+        }
+      }
+
+
+      // Calculate convex hulls for each region
+      let highRiskBoundary = [];
+      let mediumRiskBoundary = [];
+
+      // For high-risk boundary: create buffer around sensors with >= 85% probability
+      if (highRiskPoints.length >= 3) {
+        const hull = this.calculateConvexHull(highRiskPoints);
+        // Instead of buffering outward, ensure sensors are included as vertices
+        // Add sensor positions directly to the hull to prevent curving around them
+        const sensorsWithHighRisk = validSensors.filter((s) => (s.fireProbability || 0) >= 85);
+        const sensorPositions = sensorsWithHighRisk.map((s) => s.position);
+        
+        // Combine hull points with sensor positions, ensuring sensors are included
+        const combinedPoints = [...hull];
+        sensorPositions.forEach((sensorPos) => {
+          const alreadyInHull = hull.some((hullPoint) => 
+            Math.abs(hullPoint.lat - sensorPos.lat) < 0.0001 && 
+            Math.abs(hullPoint.lng - sensorPos.lng) < 0.0001
+          );
+          if (!alreadyInHull) {
+            combinedPoints.push(sensorPos);
+          }
+        });
+        
+        // Recalculate hull with sensors included
+        // Use the hull directly without buffer, or with very minimal buffer to avoid curving around sensors
+        const finalHull = combinedPoints.length > 3 
+          ? this.calculateConvexHull(combinedPoints)
+          : combinedPoints;
+        // Apply very small buffer or none at all to keep boundaries going through sensors
+        const bufferedHull = marginMiles > 0 
+          ? this.applyBuffer(finalHull, marginMiles * 0.1) // Very minimal buffer
+          : finalHull;
+        // Apply gentle smoothing to soften edges without creating loops
+        // Chaikin's algorithm prevents self-intersections
+        highRiskBoundary = bufferedHull.length > 3
+          ? this.smoothBoundary(bufferedHull, Math.min(0.4, smoothingFactor * 0.5))
+          : bufferedHull;
+      } else if (highRiskPoints.length > 0) {
+        // If we have high-risk points but less than 3, create a circular buffer around each
+        // This handles cases where sensors are isolated
+        const allBufferedPoints = [];
+        highRiskPoints.forEach((point) => {
+          // Create a small circle around this point
+          const radius = marginMiles * 2; // Larger radius for visibility
+          for (let angle = 0; angle < 360; angle += 30) {
+            const bufferedPoint = this.destinationPoint(point, angle, radius);
+            allBufferedPoints.push(bufferedPoint);
+          }
+        });
+        // Create convex hull of all buffered points
+        if (allBufferedPoints.length >= 3) {
+          highRiskBoundary = this.calculateConvexHull(allBufferedPoints);
+        } else {
+          highRiskBoundary = allBufferedPoints;
+        }
+      } else {
+        // Fallback: if no high-risk points found but we have sensors with >= 85% probability,
+        // create boundaries directly around those sensors
+        const highRiskSensors = validSensors.filter((s) => (s.fireProbability || 0) >= 85);
+        if (highRiskSensors.length > 0) {
+          const sensorPoints = highRiskSensors.map((s) => s.position);
+          if (sensorPoints.length >= 3) {
+            const hull = this.calculateConvexHull(sensorPoints);
+            // Use minimal buffer to avoid curving around sensors
+            const bufferedHull = this.applyBuffer(hull, marginMiles * 0.1);
+            // Apply gentle smoothing to soften edges without creating loops
+            highRiskBoundary = bufferedHull.length > 3
+              ? this.smoothBoundary(bufferedHull, Math.min(0.4, smoothingFactor * 0.5))
+              : bufferedHull;
+          } else {
+            // Create circular buffers around individual sensors
+            const allBufferedPoints = [];
+            sensorPoints.forEach((point) => {
+              const radius = marginMiles * 2;
+              for (let angle = 0; angle < 360; angle += 30) {
+                allBufferedPoints.push(this.destinationPoint(point, angle, radius));
+              }
+            });
+            highRiskBoundary = allBufferedPoints.length >= 3 
+              ? this.calculateConvexHull(allBufferedPoints)
+              : allBufferedPoints;
+          }
+        }
+      }
+
+      // For medium-risk boundary
+      if (mediumRiskPoints.length >= 3) {
+        const hull = this.calculateConvexHull(mediumRiskPoints);
+        // Ensure sensors are included as vertices to prevent curving around them
+        const sensorsWithMediumRisk = validSensors.filter((s) => (s.fireProbability || 0) >= 50);
+        const sensorPositions = sensorsWithMediumRisk.map((s) => s.position);
+        
+        // Combine hull points with sensor positions
+        const combinedPoints = [...hull];
+        sensorPositions.forEach((sensorPos) => {
+          const alreadyInHull = hull.some((hullPoint) => 
+            Math.abs(hullPoint.lat - sensorPos.lat) < 0.0001 && 
+            Math.abs(hullPoint.lng - sensorPos.lng) < 0.0001
+          );
+          if (!alreadyInHull) {
+            combinedPoints.push(sensorPos);
+          }
+        });
+        
+        // Recalculate hull with sensors included
+        // Use the hull directly without buffer, or with very minimal buffer to avoid curving around sensors
+        const finalHull = combinedPoints.length > 3 
+          ? this.calculateConvexHull(combinedPoints)
+          : combinedPoints;
+        // Apply very small buffer or none at all to keep boundaries going through sensors
+        const bufferedHull = marginMiles > 0 
+          ? this.applyBuffer(finalHull, marginMiles * 0.1) // Very minimal buffer
+          : finalHull;
+        // Apply gentle smoothing to soften edges without creating loops
+        // Chaikin's algorithm prevents self-intersections
+        mediumRiskBoundary = bufferedHull.length > 3
+          ? this.smoothBoundary(bufferedHull, Math.min(0.4, smoothingFactor * 0.5))
+          : bufferedHull;
+      } else if (mediumRiskPoints.length > 0) {
+        const allBufferedPoints = [];
+        mediumRiskPoints.forEach((point) => {
+          const radius = marginMiles * 2;
+          for (let angle = 0; angle < 360; angle += 30) {
+            allBufferedPoints.push(this.destinationPoint(point, angle, radius));
+          }
+        });
+        if (allBufferedPoints.length >= 3) {
+          mediumRiskBoundary = this.calculateConvexHull(allBufferedPoints);
+        } else {
+          mediumRiskBoundary = allBufferedPoints;
+        }
+      } else {
+        // Fallback for medium-risk: include sensors with >= 50% probability
+        const mediumRiskSensors = validSensors.filter((s) => (s.fireProbability || 0) >= 50);
+        if (mediumRiskSensors.length > 0) {
+          const sensorPoints = mediumRiskSensors.map((s) => s.position);
+          if (sensorPoints.length >= 3) {
+            const hull = this.calculateConvexHull(sensorPoints);
+            // Use minimal buffer to avoid curving around sensors
+            const bufferedHull = this.applyBuffer(hull, marginMiles * 0.1);
+            // Apply gentle smoothing to soften edges without creating loops
+            mediumRiskBoundary = bufferedHull.length > 3
+              ? this.smoothBoundary(bufferedHull, Math.min(0.4, smoothingFactor * 0.5))
+              : bufferedHull;
+          }
+        }
+      }
+
+      const result = {
+        highRiskBoundary,
+        mediumRiskBoundary,
+      };
 
       // Cache the result
       this.boundaryCache.set(cacheKey, {
-        boundary: smoothedBoundary,
+        boundary: result,
         timestamp: Date.now(),
       });
 
-      return smoothedBoundary;
+      return result;
     } catch (error) {
       console.error("Error calculating fire boundary:", error);
-      return [];
+      return { highRiskBoundary: [], mediumRiskBoundary: [] };
     }
+  }
+
+  /**
+   * Calculate bounding box for sensors
+   */
+  calculateBounds(sensors) {
+    if (!sensors || sensors.length === 0) {
+      return { north: 0, south: 0, east: 0, west: 0 };
+    }
+
+    const validSensors = sensors.filter((s) => hasValidSensorPosition(s));
+    if (validSensors.length === 0) {
+      return { north: 0, south: 0, east: 0, west: 0 };
+    }
+
+    const lats = validSensors.map((s) => s.position.lat);
+    const lngs = validSensors.map((s) => s.position.lng);
+
+    return {
+      north: Math.max(...lats),
+      south: Math.min(...lats),
+      east: Math.max(...lngs),
+      west: Math.min(...lngs),
+    };
   }
 
   /**
@@ -153,59 +510,53 @@ class FireBoundaryService {
   }
 
   /**
-   * Smooth boundary using Catmull-Rom splines
+   * Smooth boundary using Chaikin's corner cutting algorithm
+   * This method is guaranteed not to create self-intersections or loops
    */
   smoothBoundary(points, smoothingFactor) {
     if (points.length < 3) return points;
 
-    // Close the polygon by duplicating points for wrap-around
-    const closedPoints = [
-      points[points.length - 1],
-      ...points,
-      points[0],
-      points.length > 1 ? points[1] : points[0],
-    ];
-
-    // Generate smoothed points using Catmull-Rom splines
-    const smoothed = [];
-    // Use smoothingFactor to determine number of segments (more segments = smoother)
-    // smoothingFactor 0.3 = 10 segments, 0.5 = 15 segments, 1.0 = 30 segments
-    const numSegments = Math.max(10, Math.floor(30 * smoothingFactor));
-
-    // Process each segment between consecutive points
-    for (let i = 1; i < closedPoints.length - 2; i++) {
-      const p0 = closedPoints[i - 1];
-      const p1 = closedPoints[i]; // Start point
-      const p2 = closedPoints[i + 1]; // End point
-      const p3 = closedPoints[i + 2];
-
-      // Generate points along the spline from p1 to p2
-      for (let j = 0; j <= numSegments; j++) {
-        const t = j / numSegments; // t goes from 0 to 1
-        const point = this.catmullRomSpline(p0, p1, p2, p3, t);
-
-        // Always add the first point of each segment
-        // Skip the last point (when j == numSegments) to avoid duplicates at boundaries
-        // The next segment will start with the same point anyway
-        if (j < numSegments) {
-          smoothed.push(point);
-        }
-      }
+    // Close the polygon if not already closed
+    let closedPoints = [...points];
+    const firstPoint = points[0];
+    const lastPoint = points[points.length - 1];
+    const dist = this.distance(firstPoint, lastPoint);
+    if (dist > 0.001) {
+      closedPoints.push({ ...firstPoint });
     }
 
-    // Ensure the polygon is closed
-    if (smoothed.length > 0) {
-      const firstPoint = smoothed[0];
-      const lastPoint = smoothed[smoothed.length - 1];
-      const distance = this.distance(
-        { lat: firstPoint.lat, lng: firstPoint.lng },
-        { lat: lastPoint.lat, lng: lastPoint.lng }
-      );
+    // Determine number of iterations based on smoothing factor
+    // More iterations = smoother, but we limit to prevent over-smoothing
+    const iterations = Math.max(1, Math.min(2, Math.floor(smoothingFactor * 3)));
 
-      // Only close if not already closed (within 0.001 miles)
-      if (distance > 0.001) {
-        smoothed.push({ ...firstPoint });
+    let smoothed = closedPoints;
+
+    // Apply Chaikin's corner cutting algorithm
+    for (let iter = 0; iter < iterations; iter++) {
+      const newPoints = [];
+      const numPoints = smoothed.length;
+      
+      for (let i = 0; i < numPoints; i++) {
+        const p0 = smoothed[i];
+        const p1 = smoothed[(i + 1) % numPoints]; // Wrap around for closed polygon
+        
+        // Chaikin's algorithm: create two points between each pair
+        // At 1/4 and 3/4 of the way between p0 and p1
+        // This creates smooth curves without loops
+        const q0 = {
+          lat: p0.lat * 0.75 + p1.lat * 0.25,
+          lng: p0.lng * 0.75 + p1.lng * 0.25,
+        };
+        const q1 = {
+          lat: p0.lat * 0.25 + p1.lat * 0.75,
+          lng: p0.lng * 0.25 + p1.lng * 0.75,
+        };
+        
+        newPoints.push(q0);
+        newPoints.push(q1);
       }
+      
+      smoothed = newPoints;
     }
 
     return smoothed;

@@ -1,22 +1,28 @@
-import React from 'react';
-import { Box, Grid, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
-import MapContainer from './components/MapContainer';
-import SensorHealthOverview from './components/SensorHealthOverview';
-import WeatherCard from './components/WeatherCard';
-import DroneFeedCard from './components/DroneFeedCard';
-import DroneSelector from './components/DroneSelector';
+import React from "react";
+import { Box, Grid, CssBaseline, ThemeProvider, createTheme } from "@mui/material";
+import MapContainer from "./components/MapContainer";
+import SensorHealthOverview from "./components/SensorHealthOverview";
+import WeatherCard from "./components/WeatherCard";
+import DroneFeedCard from "./components/DroneFeedCard";
+import DroneSelector from "./components/DroneSelector";
 
-// Create a dark theme to match the screenshot
+/**
+ * Dark theme configuration for the application
+ */
 const darkTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: "dark",
     background: {
-      default: '#2c3e50',
-      paper: '#34495e',
+      default: "#2c3e50",
+      paper: "#34495e",
     },
   },
 });
 
+/**
+ * Main application component
+ * Sets up the layout with map, sensor info, weather, and drone feed
+ */
 function App() {
   return (
     <ThemeProvider theme={darkTheme}>

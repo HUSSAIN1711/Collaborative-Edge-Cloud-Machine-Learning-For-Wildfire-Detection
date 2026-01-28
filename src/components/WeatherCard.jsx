@@ -9,13 +9,28 @@ import {
   Paper,
 } from "@mui/material";
 import useAppStore from "../store/useAppStore";
-import weatherService from "../services/weatherService";
+import { getTemperatureColor, getHumidityColor } from "../utils/colorUtils";
+import { fetchWeatherForSensor, getWeatherForSensor } from "../utils/weatherHelpers";
 import ThermometerGauge from "./gauges/ThermometerGauge";
 import CircularGauge from "./gauges/CircularGauge";
 import WindCompass from "./gauges/WindCompass";
 
-// Helper component for text metrics
-const MetricTextItem = ({ label, value, unit = '', color = "text.secondary", valueColor = "text.primary" }) => (
+/**
+ * Helper component for displaying text metrics in a grid
+ * @param {Object} props - Component props
+ * @param {string} props.label - Label text
+ * @param {string|number} props.value - Value to display
+ * @param {string} props.unit - Unit to display after value
+ * @param {string} props.color - Color for label text
+ * @param {string} props.valueColor - Color for value text
+ */
+const MetricTextItem = ({
+  label,
+  value,
+  unit = "",
+  color = "text.secondary",
+  valueColor = "text.primary",
+}) => (
   <Grid item xs={12} sm={6}>
     <Typography variant="caption" color={color} sx={{ fontSize: "0.7rem", lineHeight: 1 }}>
       {label}
@@ -26,31 +41,21 @@ const MetricTextItem = ({ label, value, unit = '', color = "text.secondary", val
   </Grid>
 );
 
-
+/**
+ * Component that displays weather conditions for the selected sensor
+ * Shows temperature, humidity, wind, and additional weather metrics
+ */
 function WeatherCard() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
   const weatherData = useAppStore((state) => state.weatherData);
   const setWeatherData = useAppStore((state) => state.setWeatherData);
 
-  const getWeatherForSensor = (sensorId) => {
-    const data = weatherData[sensorId];
-    return data;
-  };
-
   // Auto-fetch weather data when sensor is selected
   useEffect(() => {
     if (selectedSensor) {
-      weatherService
-        .fetchWeatherData(
-          selectedSensor.position.lat,
-          selectedSensor.position.lng
-        )
-        .then((weatherData) => {
-          setWeatherData(selectedSensor.id, weatherData);
-        })
-        .catch((error) => {
-          console.error("Auto-fetch weather error:", error);
-        });
+      fetchWeatherForSensor(selectedSensor, setWeatherData).catch((error) => {
+        console.error("Auto-fetch weather error:", error);
+      });
     }
   }, [selectedSensor, setWeatherData]);
 
@@ -58,20 +63,7 @@ function WeatherCard() {
     return null;
   }
 
-  const weather = getWeatherForSensor(selectedSensor.id) || {};
-
-  const getTemperatureColor = (temp) => {
-    if (temp >= 90) return "#f44336";
-    if (temp >= 75) return "#ff9800";
-    if (temp >= 60) return "#ffeb3b";
-    return "#4fc3f7";
-  };
-
-  const getHumidityColor = (humidity) => {
-    if (humidity < 30) return "#f44336";
-    if (humidity < 50) return "#ff9800";
-    return "#4caf50";
-  };
+  const weather = getWeatherForSensor(selectedSensor.id, weatherData) || {};
 
   return (
     // Increased minHeight for overall vertical stability
@@ -96,17 +88,9 @@ function WeatherCard() {
           variant="outlined"
           size="small"
           onClick={() => {
-            weatherService
-              .fetchWeatherData(
-                selectedSensor.position.lat,
-                selectedSensor.position.lng
-              )
-              .then((weatherData) => {
-                setWeatherData(selectedSensor.id, weatherData);
-              })
-              .catch((error) => {
-                console.error("Manual weather fetch error:", error);
-              });
+            fetchWeatherForSensor(selectedSensor, setWeatherData).catch((error) => {
+              console.error("Manual weather fetch error:", error);
+            });
           }}
         >
           Refresh

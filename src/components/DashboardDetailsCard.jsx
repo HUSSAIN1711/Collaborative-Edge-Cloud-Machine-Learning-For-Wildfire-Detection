@@ -11,38 +11,23 @@ import {
   Button,
 } from "@mui/material";
 import useAppStore from "../store/useAppStore";
+import {
+  getFireRiskColor,
+  getFireRiskLabel,
+  getBatteryColor,
+  getHealthColor,
+} from "../utils/colorUtils";
 
+/**
+ * Component that displays dashboard details for the selected sensor
+ * Shows fire probability, status, battery, and health information
+ */
 function DashboardDetailsCard() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
   const markerDisplayMode = useAppStore((state) => state.markerDisplayMode);
   const toggleMarkerDisplayMode = useAppStore(
     (state) => state.toggleMarkerDisplayMode
   );
-
-  const getFireRiskColor = (probability) => {
-    if (probability === 100) return "#f44336"; // Red
-    if (probability >= 70) return "#ff9800"; // Orange
-    if (probability >= 40) return "#ffeb3b"; // Yellow
-    return "#4caf50"; // Green
-  };
-
-  const getFireRiskLabel = (probability) => {
-    if (probability === 100) return "CRITICAL";
-    if (probability >= 70) return "HIGH";
-    if (probability >= 40) return "MODERATE";
-    return "LOW";
-  };
-
-  const getBatteryColor = (batteryLevel) => {
-    if (batteryLevel < 10) return "#f44336"; // Red
-    if (batteryLevel < 25) return "#ff9800"; // Orange
-    if (batteryLevel < 50) return "#ffeb3b"; // Yellow
-    return "#4caf50"; // Green
-  };
-
-  const getHealthColor = (health) => {
-    return health === "Abnormal" ? "#f44336" : "#4caf50";
-  };
 
   return (
     <Card sx={{ mb: 2 }}>

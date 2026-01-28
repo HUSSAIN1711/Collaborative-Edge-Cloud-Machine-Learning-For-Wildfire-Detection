@@ -1,5 +1,5 @@
 // Test file for drone path service
-import { describe, it, expect } from 'vitest';
+import { describe, expect } from "vitest";
 import dronePathService from '../dronePathService';
 import pathOptimizationService from '../pathOptimizationService';
 

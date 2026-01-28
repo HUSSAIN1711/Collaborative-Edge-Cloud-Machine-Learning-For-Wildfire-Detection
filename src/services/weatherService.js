@@ -1,46 +1,75 @@
 import { calculateDistance, isDroneNearSensor as checkDroneProximity } from "../utils/geoUtils";
 
-// Weather service for fetching weather data from Google Maps Weather API
+/**
+ * Weather service for fetching weather data from Google Maps Weather API
+ * Handles caching, API requests, and fallback data
+ */
 class WeatherService {
+  /**
+   * Initialize the weather service with API configuration
+   */
   constructor() {
     this.apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    this.baseUrl = 'https://weather.googleapis.com/v1';
+    this.baseUrl = "https://weather.googleapis.com/v1";
     // HashMap to store weather data by sensor ID
     this.weatherCache = new Map();
     this.cacheTimestamps = new Map();
     this.cacheExpiryTime = 60 * 60 * 1000; // 1 hour in milliseconds
   }
 
-  // Generate a cache key for a location
+  /**
+   * Generate a cache key for a location
+   * @param {number} lat - Latitude
+   * @param {number} lng - Longitude
+   * @returns {string} Cache key string
+   */
   getCacheKey(lat, lng) {
     return `${lat.toFixed(4)},${lng.toFixed(4)}`;
   }
 
-  // Check if cached data is still valid
+  /**
+   * Check if cached data is still valid
+   * @param {string} cacheKey - Cache key to check
+   * @returns {boolean} True if cache is valid
+   */
   isCacheValid(cacheKey) {
     const timestamp = this.cacheTimestamps.get(cacheKey);
     if (!timestamp) return false;
-    return (Date.now() - timestamp) < this.cacheExpiryTime;
+    return Date.now() - timestamp < this.cacheExpiryTime;
   }
 
-  // Get cached weather data if available and valid
+  /**
+   * Get cached weather data if available and valid
+   * @param {number} lat - Latitude
+   * @param {number} lng - Longitude
+   * @returns {Object|null} Cached weather data or null
+   */
   getCachedWeatherData(lat, lng) {
     const cacheKey = this.getCacheKey(lat, lng);
     if (this.weatherCache.has(cacheKey) && this.isCacheValid(cacheKey)) {
-      console.log('Using cached weather data for:', lat, lng);
       return this.weatherCache.get(cacheKey);
     }
     return null;
   }
 
-  // Store weather data in cache
+  /**
+   * Store weather data in cache
+   * @param {number} lat - Latitude
+   * @param {number} lng - Longitude
+   * @param {Object} weatherData - Weather data object to cache
+   */
   setCachedWeatherData(lat, lng, weatherData) {
     const cacheKey = this.getCacheKey(lat, lng);
     this.weatherCache.set(cacheKey, weatherData);
     this.cacheTimestamps.set(cacheKey, Date.now());
-    console.log('Cached weather data for:', lat, lng);
   }
 
+  /**
+   * Fetch weather data from Google Maps Weather API
+   * @param {number} lat - Latitude
+   * @param {number} lng - Longitude
+   * @returns {Promise<Object>} Weather data object
+   */
   async fetchWeatherData(lat, lng) {
     try {
       // Check cache first
@@ -49,24 +78,18 @@ class WeatherService {
         return cachedData;
       }
 
-      console.log('Fetching weather data from Google Maps Weather API for:', lat, lng);
-      console.log('API Key available:', !!this.apiKey);
-      
       // Using Google Maps Weather API
       const response = await fetch(
         `${this.baseUrl}/currentConditions:lookup?key=${this.apiKey}&location.latitude=${lat}&location.longitude=${lng}&units_system=IMPERIAL`
       );
-      
-      console.log('Google Weather API response status:', response.status);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Google Weather API error response:', errorText);
+        console.error("Google Weather API error response:", errorText);
         throw new Error(`Google Weather API error: ${response.status} - ${errorText}`);
       }
-      
+
       const data = await response.json();
-      console.log('Google Weather API response data:', data);
       
       // Extract current conditions from Google Weather API response using correct structure
       const current = data;
@@ -86,7 +109,7 @@ class WeatherService {
         icon: current.weatherCondition?.iconBaseUri || '',
         // Additional Google Weather API specific data
         precipitation: current.precipitation?.qpf?.quantity || 0,
-        precipitationType: current.precipitation?.probability?.type?.toLowerCase() || 'none',
+        precipitationType: current.precipitation?.probability?.type?.toLowerCase() || "none",
         windGust: Math.round(current.wind?.gust?.value || current.wind?.speed?.value || 0),
         uvIndex: current.uvIndex || 0,
         visibility: Math.round(current.visibility?.distance || 10),
@@ -97,8 +120,12 @@ class WeatherService {
         windChill: Math.round(current.windChill?.degrees || current.temperature?.degrees || 0),
         feelsLike: Math.round(current.feelsLikeTemperature?.degrees || current.temperature?.degrees || 0),
         // Historical data
-        maxTemperature: Math.round(current.currentConditionsHistory?.maxTemperature?.degrees || current.temperature?.degrees || 0),
-        minTemperature: Math.round(current.currentConditionsHistory?.minTemperature?.degrees || current.temperature?.degrees || 0),
+        maxTemperature: Math.round(
+          current.currentConditionsHistory?.maxTemperature?.degrees || current.temperature?.degrees || 0
+        ),
+        minTemperature: Math.round(
+          current.currentConditionsHistory?.minTemperature?.degrees || current.temperature?.degrees || 0
+        ),
         temperatureChange: Math.round(current.currentConditionsHistory?.temperatureChange?.degrees || 0)
       };
 
@@ -115,10 +142,10 @@ class WeatherService {
         windSpeed: 8,
         windDirection: 180,
         pressure: 1013,
-        description: 'Clear sky',
-        icon: '//cdn.weatherapi.com/weather/64x64/day/113.png',
+        description: "Clear sky",
+        icon: "//cdn.weatherapi.com/weather/64x64/day/113.png",
         precipitation: 0,
-        precipitationType: 'none',
+        precipitationType: "none",
         windGust: 12,
         uvIndex: 5,
         visibility: 10,
@@ -139,12 +166,25 @@ class WeatherService {
     }
   }
 
-  // Calculate distance between two coordinates (delegates to geoUtils)
+  /**
+   * Calculate distance between two coordinates (delegates to geoUtils)
+   * @param {number} lat1 - Latitude of first point
+   * @param {number} lng1 - Longitude of first point
+   * @param {number} lat2 - Latitude of second point
+   * @param {number} lng2 - Longitude of second point
+   * @returns {number} Distance in miles
+   */
   calculateDistance(lat1, lng1, lat2, lng2) {
     return calculateDistance(lat1, lng1, lat2, lng2);
   }
 
-  // Check if drone is within proximity of a sensor (delegates to geoUtils)
+  /**
+   * Check if drone is within proximity of a sensor (delegates to geoUtils)
+   * @param {Object} dronePosition - Drone position {lat, lng}
+   * @param {Object} sensorPosition - Sensor position {lat, lng}
+   * @param {number} proximityMiles - Proximity threshold in miles (default: 0.1)
+   * @returns {boolean} True if drone is within proximity
+   */
   isDroneNearSensor(dronePosition, sensorPosition, proximityMiles = 0.1) {
     return checkDroneProximity(dronePosition, sensorPosition, proximityMiles);
   }

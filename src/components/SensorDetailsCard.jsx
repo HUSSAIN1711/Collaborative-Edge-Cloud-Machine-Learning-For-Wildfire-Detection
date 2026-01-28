@@ -1,20 +1,15 @@
 import React from "react";
 import { Typography, Card, CardContent } from "@mui/material";
 import useAppStore from "../store/useAppStore";
+import { getBatteryColor, getHealthColor } from "../utils/colorUtils";
+import { formatPosition } from "../utils/positionUtils";
 
+/**
+ * Component that displays detailed information about the selected sensor
+ * Shows sensor ID, status, location, fire probability, battery, and health
+ */
 function SensorDetailsCard() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
-
-  const getBatteryColor = (batteryLevel) => {
-    if (batteryLevel < 10) return "#f44336"; // Red
-    if (batteryLevel < 25) return "#ff9800"; // Orange
-    if (batteryLevel < 50) return "#ffeb3b"; // Yellow
-    return "#4caf50"; // Green
-  };
-
-  const getHealthColor = (health) => {
-    return health === "Abnormal" ? "#f44336" : "#4caf50";
-  };
 
   return selectedSensor ? (
     <Card sx={{ mb: 2 }}>
@@ -29,8 +24,7 @@ function SensorDetailsCard() {
           <strong>Last Ping:</strong> {selectedSensor.lastPing}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          <strong>Location:</strong> {selectedSensor.position.lat.toFixed(4)},{" "}
-          {selectedSensor.position.lng.toFixed(4)}
+          <strong>Location:</strong> {formatPosition(selectedSensor.position)}
         </Typography>
         <Typography
           variant="body2"

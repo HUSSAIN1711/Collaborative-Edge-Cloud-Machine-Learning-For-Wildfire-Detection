@@ -7,12 +7,17 @@ import {
   CardMedia,
 } from "@mui/material";
 import useAppStore from "../store/useAppStore";
+import { formatPosition } from "../utils/positionUtils";
 
+/**
+ * Component that displays drone mission feed information
+ * Shows drone location, zone, status, and live sensor feed when available
+ */
 function DroneFeedCard() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
   const selectedDroneId = useAppStore((state) => state.selectedDroneId);
   const drones = useAppStore((state) => state.drones);
-  
+
   const selectedDrone = drones.find((drone) => drone.id === selectedDroneId) || null;
 
   if (!selectedDrone) {
@@ -72,8 +77,7 @@ function DroneFeedCard() {
       </Box>
       <CardContent sx={{ flexGrow: 1, p: 2 }}>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          <strong>Location:</strong> {dronePosition.lat.toFixed(4)},{" "}
-          {dronePosition.lng.toFixed(4)}
+          <strong>Location:</strong> {formatPosition(dronePosition)}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
           <strong>Zone:</strong> {zone?.name || "Unknown"} ({zone?.sensors.length || 0} sensors)

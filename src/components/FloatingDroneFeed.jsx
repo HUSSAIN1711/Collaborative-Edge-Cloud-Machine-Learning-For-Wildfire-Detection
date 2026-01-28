@@ -10,7 +10,12 @@ import {
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import useAppStore from "../store/useAppStore";
+import { formatPosition } from "../utils/positionUtils";
 
+/**
+ * Floating draggable component that displays drone mission feed
+ * Can be minimized, resized, and moved around the screen
+ */
 function FloatingDroneFeed() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
   const dronePosition = useAppStore((state) => state.dronePosition);
@@ -124,8 +129,7 @@ function FloatingDroneFeed() {
           <>
             <CardContent sx={{ flexGrow: 1, p: 2, pb: 1 }}>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                <strong>Location:</strong> {dronePosition.lat.toFixed(4)},{" "}
-                {dronePosition.lng.toFixed(4)}
+                <strong>Location:</strong> {formatPosition(dronePosition)}
               </Typography>
               <Typography variant="body2" sx={{ mb: 1 }}>
                 <strong>Status:</strong>{" "}

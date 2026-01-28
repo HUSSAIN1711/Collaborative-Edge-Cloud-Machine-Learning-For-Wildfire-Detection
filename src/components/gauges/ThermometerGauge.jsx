@@ -8,7 +8,6 @@ function ThermometerGauge({ value, min = 50, max = 100, label = "Temp", unit = "
   
   const width = 12; // Tube width
   const bulbSize = 24; // Bulb diameter
-  const scaleWidth = 5; // Minimal width for positioning offset
   
   // Determine color based on temperature zones for better visual context
   const getTempColor = (temp) => {
