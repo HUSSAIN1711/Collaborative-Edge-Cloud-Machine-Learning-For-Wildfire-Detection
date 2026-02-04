@@ -182,6 +182,12 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
   - Comprehensive weather data (temperature, humidity, wind, UV, etc.)
   - Fallback data on API failure
 
+### Machine Learning (Fire Risk Model)
+- **Location**: `src/MachineLearningModels/EdgeDeviceModelArtifacts/`
+- **Training (dev-only)**: `train_fire_risk_model.py` — run only when the model or dataset changes. Reads CSV, trains Random Forest, saves `fire_risk_model.joblib` and `feature_names.json`. Dataset: `CA_Weather_Fire_Dataset_1984-2025.csv` in this folder (or env `FIRE_DATASET_CSV`).
+- **Production inference**: `inference.py` — load the saved model and call `predict(features)` or `predict_proba(features)` (dict or DataFrame with MIN_TEMP, MAX_TEMP, AVG_WIND_SPEED, DAY_OF_YEAR). Other code should use this module; do not re-run training in production.
+- **Dependencies**: `requirements.txt` (pandas, numpy, scikit-learn, joblib).
+
 ## Utility Functions
 
 ### geoUtils.js
@@ -388,6 +394,10 @@ See `package.json` for complete list. Key dependencies:
 4. Run tests: `npm test`
 5. Open browser to localhost:5173 (or port shown in terminal)
 
+## Recent Changes
+
+- **Fire risk ML**: Replaced monolithic EdgeDeviceModel script with (1) dev-only `train_fire_risk_model.py` that trains and saves the model artifact, and (2) production `inference.py` for loading and running predictions. Removed plots, manual scenarios, and combined tables from training flow.
+
 ## Last Updated
 
-Updated to reflect current multi-drone, zone-based architecture with comprehensive testing and utility functions. All 68 unit tests passing.
+Updated to reflect current multi-drone, zone-based architecture with comprehensive testing, utility functions, and ML fire-risk model (train vs inference separation). All 68 unit tests passing.
