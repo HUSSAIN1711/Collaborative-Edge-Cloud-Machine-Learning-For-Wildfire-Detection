@@ -12,9 +12,11 @@ import {
   Button,
   CircularProgress,
   Fade,
+  Alert,
 } from "@mui/material";
 import useAppStore from "../store/useAppStore";
 import weatherService from "../services/weatherService";
+import imagePredictionService from "../services/imagePredictionService";
 
 // Memoized Weather Display Component - only re-renders when weather data changes
 const WeatherDisplay = memo(({ weatherData, selectedSensor, setWeatherData, isLoading }) => {
@@ -241,6 +243,7 @@ const useSensorWeather = (sensorId) => {
 function Sidebar() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
   const dronePosition = useAppStore((state) => state.dronePosition);
+  const droneFeedImageUrls = useAppStore((state) => state.droneFeedImageUrls);
   // Only subscribe to the specific sensor's weather data - prevents re-renders for other sensors
   const currentWeatherData = useSensorWeather(selectedSensor?.id);
   const setWeatherData = useAppStore((state) => state.setWeatherData);
@@ -257,6 +260,19 @@ function Sidebar() {
   // It won't be set to 'null' just because we're fetching new data.
   // This implements the "stale-while-revalidate" pattern.
   const [displayWeather, setDisplayWeather] = useState(null);
+
+  // Image prediction state
+  const [isLoadingPrediction, setIsLoadingPrediction] = useState(false);
+  const [predictionError, setPredictionError] = useState(null);
+  const setImagePrediction = useAppStore((state) => state.setImagePrediction);
+  const getImagePrediction = useAppStore((state) => state.getImagePrediction);
+  const imagePredictions = useAppStore((state) => state.imagePredictions);
+  // Drone feed loops through 4 images by sensor index (1→0, 2→1, 3→2, 4→3, 5→0, …)
+  const feedIndex = selectedSensor ? (selectedSensor.id - 1) % droneFeedImageUrls.length : 0;
+  const currentFeedUrl = droneFeedImageUrls[feedIndex] || null;
+  const currentPrediction = useMemo(() => {
+    return imagePredictions[feedIndex] ?? null;
+  }, [feedIndex, imagePredictions]);
 
   const getFireRiskColor = (probability) => {
     if (probability === 100) return "#f44336"; // Red
@@ -306,6 +322,33 @@ function Sidebar() {
       setDisplayWeather(null);
     }
   }, [selectedSensor?.id, currentWeatherData, lastFetchedSensorId]);
+
+  // Fetch image prediction for current drone feed (loops through 4 images by feed index)
+  useEffect(() => {
+    if (selectedSensor && currentFeedUrl) {
+      const cachedPrediction = getImagePrediction(feedIndex);
+
+      if (!cachedPrediction) {
+        setIsLoadingPrediction(true);
+        setPredictionError(null);
+
+        imagePredictionService
+          .predictFromImageUrl(currentFeedUrl)
+          .then((result) => {
+            setImagePrediction(feedIndex, result);
+            setIsLoadingPrediction(false);
+          })
+          .catch((error) => {
+            console.error("Error predicting image:", error);
+            setPredictionError(error.message || "Failed to analyze image");
+            setIsLoadingPrediction(false);
+          });
+      }
+    } else {
+      setIsLoadingPrediction(false);
+      setPredictionError(null);
+    }
+  }, [selectedSensor?.id, feedIndex, currentFeedUrl, getImagePrediction, setImagePrediction]);
 
   return (
     <Box>
@@ -546,12 +589,57 @@ function Sidebar() {
           </Typography>
         </CardContent>
         {selectedSensor && (
-          <CardMedia
-            component="img"
-            height="194"
-            image={selectedSensor.imageUrl}
-            alt={`Live feed from sensor ${selectedSensor.id}`}
-          />
+          <>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ px: 2, pt: 1 }}>
+              Live feed from drone
+            </Typography>
+            <CardMedia
+              component="img"
+              height="194"
+              image={currentFeedUrl}
+              alt={`Live feed from drone (sensor ${selectedSensor.id})`}
+            />
+            {/* Image Prediction Results */}
+            <CardContent>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                AI Image Analysis
+              </Typography>
+              {isLoadingPrediction ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={16} />
+                  <Typography variant="body2" color="text.secondary">
+                    Analyzing image...
+                  </Typography>
+                </Box>
+              ) : predictionError ? (
+                <Alert severity="warning" sx={{ py: 0.5 }}>
+                  <Typography variant="caption">
+                    {predictionError}
+                  </Typography>
+                </Alert>
+              ) : currentPrediction ? (
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Chip
+                      label={currentPrediction.fire_detected ? "Fire Detected" : "No Fire"}
+                      color={currentPrediction.fire_detected ? "error" : "success"}
+                      size="small"
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      {currentPrediction.confidence}% confidence
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    ML Model Prediction (ResNet18)
+                  </Typography>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No prediction available
+                </Typography>
+              )}
+            </CardContent>
+          </>
         )}
       </Card>
     </Box>

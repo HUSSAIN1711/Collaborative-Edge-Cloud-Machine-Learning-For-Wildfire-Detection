@@ -10,14 +10,25 @@ const processedSensors = sensorsData.map((sensor) => ({
   sensorHealth: sensor.batteryStatus < 10 ? "Abnormal" : "Normal",
 }));
 
+// Drone feed images (4 images that loop as the drone visits sensors)
+const DRONE_FEED_IMAGE_URLS = [
+  "https://upload.wikimedia.org/wikipedia/commons/0/05/Burnout_ops_on_Mangum_Fire_McCall_Smokejumpers.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Aerial_view_of_the_Amazon_Rainforest.jpg/960px-Aerial_view_of_the_Amazon_Rainforest.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Namdapha2.jpg/500px-Namdapha2.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Prescribed_burn_in_a_Pinus_nigra_stand_in_Portugal.JPG/500px-Prescribed_burn_in_a_Pinus_nigra_stand_in_Portugal.JPG",
+];
+
 const useAppStore = create((set, get) => ({
   sensors: processedSensors,
   dronePath: [], // Will be generated dynamically
   fireBoundary: [], // Will be calculated dynamically from sensors
   selectedSensor: null,
   dronePosition: { lat: 34.07, lng: -118.58 }, // Default starting position
+  droneFeedImageUrls: DRONE_FEED_IMAGE_URLS,
   weatherData: {}, // Cache for weather data by sensor ID
   weatherCacheTimestamps: {}, // Track when weather data was last fetched
+  imagePredictions: {}, // Cache for image predictions by sensor ID
+  imagePredictionTimestamps: {}, // Track when predictions were last fetched
   markerDisplayMode: "health", // 'health' or 'default'
   pathGenerationOptions: {
     maxDistance: 0.5,
@@ -232,6 +243,40 @@ const useAppStore = create((set, get) => ({
     }));
     get().calculateFireBoundary();
   },
+
+  // Image prediction methods (keyed by drone feed index 0–3)
+  setImagePrediction: (feedIndex, prediction) =>
+    set((state) => ({
+      imagePredictions: { ...state.imagePredictions, [feedIndex]: prediction },
+      imagePredictionTimestamps: {
+        ...state.imagePredictionTimestamps,
+        [feedIndex]: Date.now(),
+      },
+    })),
+
+  getImagePrediction: (feedIndex) => {
+    const state = get();
+    const timestamp = state.imagePredictionTimestamps[feedIndex];
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000; // Cache for 5 minutes
+
+    if (timestamp && now - timestamp < fiveMinutes) {
+      return state.imagePredictions[feedIndex];
+    }
+    return null;
+  },
+
+  clearImagePrediction: (feedIndex) =>
+    set((state) => {
+      const newPredictions = { ...state.imagePredictions };
+      const newTimestamps = { ...state.imagePredictionTimestamps };
+      delete newPredictions[feedIndex];
+      delete newTimestamps[feedIndex];
+      return {
+        imagePredictions: newPredictions,
+        imagePredictionTimestamps: newTimestamps,
+      };
+    }),
 }));
 
 export default useAppStore;

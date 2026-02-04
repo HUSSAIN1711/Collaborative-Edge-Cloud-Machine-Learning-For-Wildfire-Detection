@@ -49,6 +49,9 @@ Once the API keys are generated, create a `.env.local` file in the project root 
 ```
 # Google Maps API Key (Required for map functionality and weather data)
 VITE_GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY_HERE
+
+# Optional: Image prediction API URL (defaults to http://localhost:5001)
+# VITE_IMAGE_PREDICTION_API_URL=http://localhost:5001
 ```
 
 **Important Notes:**
@@ -57,11 +60,36 @@ VITE_GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY_HERE
 - Replace the placeholder values with your actual API keys
 - Do not share these keys publicly
 
+## Image Prediction API (Optional)
 
+The dashboard can show AI wildfire predictions on sensor images. To enable this:
 
-## Start the development server:
+1. **Install Python dependencies** (one-time):
+   ```bash
+   pip install -r src/MachineLearningModels/EdgeDeviceModelArtifacts/requirements.txt
+   ```
+   This installs PyTorch, Flask, **flask-cors**, Pillow, and other dependencies.
+
+2. **Place the model file** at `models/wildfire_resnet18.pth` (project root).
+
+3. **Run the full stack**: Use `npm run dev` (see below) to start both the React app and the image prediction API, or run the API manually:
+   ```bash
+   python3 src/MachineLearningModels/EdgeDeviceModelArtifacts/image_inference_api.py
+   ```
+   The API runs on port 5001. **flask-cors** is required so the dashboard can call the API.
+
+## Start the development server
+
+**Recommended** – starts both the React dashboard and the image prediction API:
+
 ```bash
 npm run dev
+```
+
+To run only the React app (no image predictions):
+
+```bash
+npm run dev:app
 ```
 
 ## Features
