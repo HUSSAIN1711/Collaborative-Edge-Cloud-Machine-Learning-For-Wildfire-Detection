@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { Rectangle } from "@react-google-maps/api";
+import React, { useMemo, useState } from "react";
+import { Rectangle, OverlayView } from "@react-google-maps/api";
 import fireBoundaryService from "../../services/fireBoundaryService";
 import useAppStore from "../../store/useAppStore";
 
@@ -14,6 +14,23 @@ function colorForProbability(p) {
   return "#90EE90";
 }
 
+const tooltipStyle = {
+  background: "rgba(0, 0, 0, 0.85)",
+  color: "#fff",
+  padding: "6px 12px",
+  borderRadius: "6px",
+  fontSize: "14px",
+  fontWeight: "600",
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  whiteSpace: "nowrap",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+  pointerEvents: "none",
+  position: "absolute",
+  transform: "translate(-50%, -100%)",
+  marginBottom: "8px",
+  zIndex: 100,
+};
+
 /**
  * Grid of rectangles showing fire probability across the selected zone
  * Uses Rectangle overlays instead of HeatmapLayer (no visualization library)
@@ -21,6 +38,7 @@ function colorForProbability(p) {
  * @param {boolean} visible - Whether to show the overlays (avoids unmount cleanup issues)
  */
 function FireProbabilityGrid({ selectedDrone, visible = true }) {
+  const [hoveredCell, setHoveredCell] = useState(null);
   const fireBoundaryOptions = useAppStore((s) => s.fireBoundaryOptions);
   const cells = useMemo(() => {
     const sensors = selectedDrone?.zone?.sensors ?? [];
@@ -28,6 +46,23 @@ function FireProbabilityGrid({ selectedDrone, visible = true }) {
   }, [selectedDrone, fireBoundaryOptions]);
 
   if (!selectedDrone || cells.length === 0) return null;
+
+  const handleMouseOver = (cell, e) => {
+    const latLng = e.latLng;
+    setHoveredCell({
+      probability: cell.probability,
+      position: { lat: latLng.lat(), lng: latLng.lng() },
+    });
+  };
+
+  const handleMouseMove = (e) => {
+    const latLng = e.latLng;
+    setHoveredCell((prev) =>
+      prev ? { ...prev, position: { lat: latLng.lat(), lng: latLng.lng() } } : null
+    );
+  };
+
+  const handleMouseOut = () => setHoveredCell(null);
 
   return (
     <>
@@ -39,14 +74,26 @@ function FireProbabilityGrid({ selectedDrone, visible = true }) {
           options={{
             fillColor: colorForProbability(cell.probability),
             fillOpacity: 0.45,
-            strokeColor: colorForProbability(cell.probability),
-            strokeOpacity: 0.6,
+            strokeColor: "rgba(255, 255, 255, 0.5)",
+            strokeOpacity: 0.25,
             strokeWeight: 1,
-            clickable: false,
+            clickable: true,
             zIndex: 1,
           }}
+          onMouseOver={(e) => handleMouseOver(cell, e)}
+          onMouseMove={handleMouseMove}
+          onMouseOut={handleMouseOut}
         />
       ))}
+      {visible && hoveredCell && (
+        <OverlayView
+          position={hoveredCell.position}
+          mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+          getPixelOffset={() => ({ x: 0, y: 0 })}
+        >
+          <div style={tooltipStyle}>{Math.round(hoveredCell.probability)}% fire risk</div>
+        </OverlayView>
+      )}
     </>
   );
 }

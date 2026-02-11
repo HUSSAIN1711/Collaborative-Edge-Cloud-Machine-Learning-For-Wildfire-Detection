@@ -65,22 +65,22 @@ function FireBoundaryPolygons({ drones, selectedDroneId, visible = true }) {
               <>
                 <Polygon
                   paths={mediumRiskBoundary}
+                  visible={visible}
                   options={{
                     fillColor: "#FFD700",
                     fillOpacity: isSelected ? 0.25 : 0.15,
                     strokeColor: "#FFA500",
                     strokeOpacity: 0,
                     strokeWeight: 0,
-                    visible,
                   }}
                 />
                 <Polyline
                   path={[...mediumRiskBoundary, mediumRiskBoundary[0]]}
+                  visible={visible}
                   options={{
                     strokeColor: "#FFA500",
                     strokeOpacity: isSelected ? 0.7 : 0.5,
                     strokeWeight: isSelected ? 2.5 : 2,
-                    visible,
                   }}
                   onMouseOver={(e) => handleMouseOver("≥50%", e)}
                   onMouseMove={handleMouseMove}
@@ -93,6 +93,7 @@ function FireBoundaryPolygons({ drones, selectedDroneId, visible = true }) {
               <>
                 <Polygon
                   paths={highRiskBoundary}
+                  visible={visible}
                   options={{
                     fillColor: "#FF5555",
                     fillOpacity: isSelected ? 0.2 : 0.15,
@@ -100,16 +101,15 @@ function FireBoundaryPolygons({ drones, selectedDroneId, visible = true }) {
                     strokeOpacity: 0,
                     strokeWeight: 0,
                     zIndex: 2,
-                    visible,
                   }}
                 />
                 <Polyline
                   path={[...highRiskBoundary, highRiskBoundary[0]]}
+                  visible={visible}
                   options={{
                     strokeColor: "#FF2222",
                     strokeOpacity: isSelected ? 0.7 : 0.55,
                     strokeWeight: isSelected ? 2.5 : 2,
-                    visible,
                   }}
                   onMouseOver={(e) => handleMouseOver("≥85%", e)}
                   onMouseMove={handleMouseMove}
