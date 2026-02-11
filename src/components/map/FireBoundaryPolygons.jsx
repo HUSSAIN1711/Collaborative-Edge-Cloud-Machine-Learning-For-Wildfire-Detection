@@ -6,8 +6,9 @@ import { Polygon, Polyline, OverlayView } from "@react-google-maps/api";
  * Shows percentage (≥85% high risk, ≥50% medium risk) on hover
  * @param {Array} drones - Array of drone objects with fireBoundary data
  * @param {string} selectedDroneId - ID of the currently selected drone
+ * @param {boolean} visible - Whether to show the overlays (avoids unmount cleanup issues)
  */
-function FireBoundaryPolygons({ drones, selectedDroneId }) {
+function FireBoundaryPolygons({ drones, selectedDroneId, visible = true }) {
   const [hoveredBoundary, setHoveredBoundary] = useState(null);
 
   const tooltipStyle = {
@@ -70,6 +71,7 @@ function FireBoundaryPolygons({ drones, selectedDroneId }) {
                     strokeColor: "#FFA500",
                     strokeOpacity: 0,
                     strokeWeight: 0,
+                    visible,
                   }}
                 />
                 <Polyline
@@ -78,6 +80,7 @@ function FireBoundaryPolygons({ drones, selectedDroneId }) {
                     strokeColor: "#FFA500",
                     strokeOpacity: isSelected ? 0.7 : 0.5,
                     strokeWeight: isSelected ? 2.5 : 2,
+                    visible,
                   }}
                   onMouseOver={(e) => handleMouseOver("≥50%", e)}
                   onMouseMove={handleMouseMove}
@@ -97,6 +100,7 @@ function FireBoundaryPolygons({ drones, selectedDroneId }) {
                     strokeOpacity: 0,
                     strokeWeight: 0,
                     zIndex: 2,
+                    visible,
                   }}
                 />
                 <Polyline
@@ -105,6 +109,7 @@ function FireBoundaryPolygons({ drones, selectedDroneId }) {
                     strokeColor: "#FF2222",
                     strokeOpacity: isSelected ? 0.7 : 0.55,
                     strokeWeight: isSelected ? 2.5 : 2,
+                    visible,
                   }}
                   onMouseOver={(e) => handleMouseOver("≥85%", e)}
                   onMouseMove={handleMouseMove}
@@ -117,7 +122,7 @@ function FireBoundaryPolygons({ drones, selectedDroneId }) {
       })}
 
       {/* Hover tooltip */}
-      {hoveredBoundary && (
+      {visible && hoveredBoundary && (
         <OverlayView
           position={hoveredBoundary.position}
           mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}

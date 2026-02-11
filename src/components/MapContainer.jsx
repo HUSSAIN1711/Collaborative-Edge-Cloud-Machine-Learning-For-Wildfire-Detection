@@ -7,6 +7,7 @@ import { useMapCenter } from "../hooks/useMapCenter";
 import SensorMarkers from "./map/SensorMarkers";
 import DroneMarkers from "./map/DroneMarkers";
 import FireBoundaryPolygons from "./map/FireBoundaryPolygons";
+import FireProbabilityGrid from "./map/FireProbabilityGrid";
 
 const containerStyle = {
   width: "100%",
@@ -30,6 +31,7 @@ function MapContainer() {
     setSelectedSensor,
     initializeZonesAndDrones,
     markerDisplayMode,
+    fireDisplayMode,
   } = useAppStore();
 
   const selectedDrone = drones.find((drone) => drone.id === selectedDroneId) || null;
@@ -70,7 +72,12 @@ function MapContainer() {
         onSensorClick={setSelectedSensor}
       />
       <DroneMarkers drones={drones} selectedDroneId={selectedDroneId} />
-      <FireBoundaryPolygons drones={drones} selectedDroneId={selectedDroneId} />
+      <FireBoundaryPolygons
+        drones={drones}
+        selectedDroneId={selectedDroneId}
+        visible={fireDisplayMode === "boundary"}
+      />
+      <FireProbabilityGrid selectedDrone={selectedDrone} visible={fireDisplayMode === "heatmap"} />
     </GoogleMap>
   ) : null;
 }
