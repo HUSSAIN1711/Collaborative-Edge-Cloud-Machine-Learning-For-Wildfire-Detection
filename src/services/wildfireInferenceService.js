@@ -35,7 +35,7 @@ function wrapNetworkError(error) {
       ? `(proxied at ${API_PATH_PREFIX})`
       : `at ${INFERENCE_API_BASE}`;
     throw new Error(
-      `Inference server not reachable ${where}. Start it with: cd api && python image_inference_api.py`,
+      `Inference server not reachable ${where}. Start it with: python3 src/MachineLearningModels/EdgeDeviceModelArtifacts/image_inference_api.py`,
     );
   }
   throw error;
@@ -55,11 +55,13 @@ export async function predictWildfireFromImageUrl(imageUrl) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image_url: imageUrl }),
     });
+    const body = await res.json().catch(() => null);
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(err.error ?? `Inference API error: ${res.status}`);
+      const message =
+        (body && body.error) || res.statusText || `Inference API error: ${res.status}`;
+      throw new Error(message);
     }
-    return res.json();
+    return body;
   } catch (err) {
     wrapNetworkError(err);
   }
@@ -81,12 +83,14 @@ export async function predictWildfireFromImageBlob(imageBlob) {
       body: form,
     });
 
+    const body = await res.json().catch(() => null);
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(err.error ?? `Inference API error: ${res.status}`);
+      const message =
+        (body && body.error) || res.statusText || `Inference API error: ${res.status}`;
+      throw new Error(message);
     }
 
-    return res.json();
+    return body;
   } catch (err) {
     wrapNetworkError(err);
   }
@@ -129,6 +133,35 @@ export async function getImageBlobFromUrl(imageUrl) {
 export async function checkInferenceHealth() {
   const res = await fetch(apiUrl("/health"));
   return res.json();
+}
+
+/**
+ * Predict weather-based fire risk using EdgeDeviceModelArtifacts/inference.py.
+ * Accepts the raw weatherData object from weatherService.
+ * @param {Object} weatherData - Weather data from weatherService
+ * @returns {Promise<{ fire_risk_class: number, fire_risk_probability: number, fire_risk_percent: number, features_used: Object }>}
+ */
+export async function predictWeatherRiskFromWeatherData(weatherData) {
+  try {
+    const res = await fetch(apiUrl("/predict-weather-risk"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ weatherData }),
+    });
+
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+      const message =
+        (body && body.error) ||
+        res.statusText ||
+        `Weather risk inference API error: ${res.status}`;
+      throw new Error(message);
+    }
+
+    return body;
+  } catch (err) {
+    wrapNetworkError(err);
+  }
 }
 
 /**

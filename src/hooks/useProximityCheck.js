@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import useAppStore from "../store/useAppStore";
 import weatherService from "../services/weatherService";
 import { isValidPosition, isDroneNearSensor } from "../utils/geoUtils";
+import { fetchWeatherForSensor } from "../utils/weatherHelpers";
 
 /**
  * Custom hook to handle proximity checking between drone and sensors
@@ -10,7 +11,12 @@ import { isValidPosition, isDroneNearSensor } from "../utils/geoUtils";
  * @param {Array} sensors - Array of sensor objects
  */
 export function useProximityCheck(selectedDrone, sensors) {
-  const { setSelectedSensor, getWeatherData, setWeatherData } = useAppStore();
+  const {
+    setSelectedSensor,
+    getWeatherData,
+    setWeatherData,
+    updateSensorFireProbability,
+  } = useAppStore();
   const [activeSensor, setActiveSensor] = useState(null);
   const proximityCheckTimeoutRef = useRef(null);
 
@@ -93,11 +99,11 @@ export function useProximityCheck(selectedDrone, sensors) {
             const cachedWeather = getWeatherData(nearSensor.id);
 
             if (!cachedWeather) {
-              weatherService
-                .fetchWeatherData(nearSensor.position.lat, nearSensor.position.lng)
-                .then((weatherData) => {
-                  setWeatherData(nearSensor.id, weatherData);
-                })
+              fetchWeatherForSensor(
+                nearSensor,
+                setWeatherData,
+                updateSensorFireProbability
+              )
                 .catch((error) => {
                   console.error("Error fetching weather data:", error);
                 });
@@ -123,6 +129,7 @@ export function useProximityCheck(selectedDrone, sensors) {
     setSelectedSensor,
     getWeatherData,
     setWeatherData,
+    updateSensorFireProbability,
     activeSensor,
   ]);
 

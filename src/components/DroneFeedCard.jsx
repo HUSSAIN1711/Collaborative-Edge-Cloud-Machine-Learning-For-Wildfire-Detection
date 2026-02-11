@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import useAppStore from "../store/useAppStore";
 import { formatPosition } from "../utils/positionUtils";
-import { predictWildfireFromImageBlob } from "../services/wildfireInferenceService";
+import { predictWildfireFromImageUrl } from "../services/wildfireInferenceService";
 
 /**
  * Component that displays drone mission feed information
@@ -24,15 +24,17 @@ function DroneFeedCard() {
   const [prediction, setPrediction] = useState(null);
   const [predictionLoading, setPredictionLoading] = useState(false);
   const [predictionError, setPredictionError] = useState(null);
-  /** Object URL of the image we fetched and display (same image sent to the model). */
+  /** Display image source returned by backend (usually base64 data URI). */
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
-  const objectUrlRef = useRef(null);
+  /** Cache by image URL to avoid hammering third-party hosts and hitting 429 rate limits. */
+  const predictionCacheRef = useRef(new Map());
 
   const selectedDrone = drones.find((drone) => drone.id === selectedDroneId) || null;
 
-  // Fetch image in frontend, display it, and send that same image to the API (no URL sent to API)
+  // Fetch + infer via backend so browser CORS/hotlink restrictions do not break prediction.
   useEffect(() => {
-    if (!selectedSensor?.imageUrl) {
+    const imageUrl = selectedSensor?.imageUrl;
+    if (!imageUrl) {
       setPrediction(null);
       setPredictionError(null);
       setDisplayImageUrl(null);
@@ -42,25 +44,33 @@ function DroneFeedCard() {
     setPredictionLoading(true);
     setPredictionError(null);
     setDisplayImageUrl(null);
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
+
+    const cachedEntry = predictionCacheRef.current.get(imageUrl);
+    if (cachedEntry) {
+      setPrediction(cachedEntry.prediction);
+      setDisplayImageUrl(cachedEntry.displayImageUrl);
+      setPredictionLoading(false);
+      return;
     }
 
-    fetch(selectedSensor.imageUrl)
-      .then((res) => {
-        if (!res.ok) throw new Error(res.status === 403 ? "Image host blocked request (403)." : `HTTP ${res.status}`);
-        return res.blob();
-      })
+    predictWildfireFromImageUrl(imageUrl)
       .then((blob) => {
         if (cancelled) return;
-        const objectUrl = URL.createObjectURL(blob);
-        objectUrlRef.current = objectUrl;
-        setDisplayImageUrl(objectUrl);
-        return predictWildfireFromImageBlob(blob);
-      })
-      .then((result) => {
-        if (!cancelled && result) setPrediction(result);
+        if (!blob) return;
+
+        const contentType = blob.image_content_type || "image/jpeg";
+        const resolvedImageSrc = blob.image_base64
+          ? `data:${contentType};base64,${blob.image_base64}`
+          : imageUrl;
+
+        const cachedPayload = {
+          prediction: blob,
+          displayImageUrl: resolvedImageSrc,
+        };
+        predictionCacheRef.current.set(imageUrl, cachedPayload);
+
+        setPrediction(blob);
+        setDisplayImageUrl(resolvedImageSrc);
       })
       .catch((err) => {
         if (!cancelled) {
@@ -74,10 +84,6 @@ function DroneFeedCard() {
 
     return () => {
       cancelled = true;
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
     };
   }, [selectedSensor?.imageUrl]);
 
@@ -203,8 +209,11 @@ function DroneFeedCard() {
             )}
             {predictionError && (
               <Typography variant="body2" color="error.main">
-                {predictionError.includes("Failed to fetch") && !predictionError.includes("fetch image")
-                  ? "Inference server not reachable. Start it with: cd api && python image_inference_api.py"
+                {predictionError.includes("429")
+                  ? "Image host rate-limited requests (HTTP 429). Please wait a bit and try another sensor."
+                  : predictionError.includes("Failed to fetch") &&
+                      !predictionError.includes("fetch image")
+                  ? "Inference server not reachable. Start it with: python3 src/MachineLearningModels/EdgeDeviceModelArtifacts/image_inference_api.py"
                   : predictionError.includes("fetch image") ||
                       predictionError.includes("403") ||
                       predictionError.includes("Forbidden")

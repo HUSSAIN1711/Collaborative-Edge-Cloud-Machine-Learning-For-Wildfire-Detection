@@ -322,6 +322,32 @@ const useAppStore = create((set, get) => ({
     return null; // Indicates data needs to be fetched
   },
 
+  /**
+   * Update a sensor's fireProbability value in store (0-100).
+   * Keeps selectedSensor in sync if it matches the sensorId.
+   * @param {string|number} sensorId - Sensor ID
+   * @param {number} fireRiskPercent - Fire risk percentage (0-100)
+   */
+  updateSensorFireProbability: (sensorId, fireRiskPercent) =>
+    set((state) => {
+      const normalizedValue = Math.max(0, Math.min(100, Math.round(fireRiskPercent)));
+      const updatedSensors = state.sensors.map((sensor) =>
+        sensor.id === sensorId
+          ? { ...sensor, fireProbability: normalizedValue }
+          : sensor
+      );
+
+      const updatedSelectedSensor =
+        state.selectedSensor && state.selectedSensor.id === sensorId
+          ? { ...state.selectedSensor, fireProbability: normalizedValue }
+          : state.selectedSensor;
+
+      return {
+        sensors: updatedSensors,
+        selectedSensor: updatedSelectedSensor,
+      };
+    }),
+
   // Clear weather cache for a specific sensor
   clearWeatherData: (sensorId) =>
     set((state) => {

@@ -49,15 +49,22 @@ function WeatherCard() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
   const weatherData = useAppStore((state) => state.weatherData);
   const setWeatherData = useAppStore((state) => state.setWeatherData);
+  const updateSensorFireProbability = useAppStore(
+    (state) => state.updateSensorFireProbability
+  );
 
   // Auto-fetch weather data when sensor is selected
   useEffect(() => {
     if (selectedSensor) {
-      fetchWeatherForSensor(selectedSensor, setWeatherData).catch((error) => {
+      fetchWeatherForSensor(
+        selectedSensor,
+        setWeatherData,
+        updateSensorFireProbability
+      ).catch((error) => {
         console.error("Auto-fetch weather error:", error);
       });
     }
-  }, [selectedSensor, setWeatherData]);
+  }, [selectedSensor, setWeatherData, updateSensorFireProbability]);
 
   if (!selectedSensor) {
     return null;
@@ -88,7 +95,11 @@ function WeatherCard() {
           variant="outlined"
           size="small"
           onClick={() => {
-            fetchWeatherForSensor(selectedSensor, setWeatherData).catch((error) => {
+            fetchWeatherForSensor(
+              selectedSensor,
+              setWeatherData,
+              updateSensorFireProbability
+            ).catch((error) => {
               console.error("Manual weather fetch error:", error);
             });
           }}

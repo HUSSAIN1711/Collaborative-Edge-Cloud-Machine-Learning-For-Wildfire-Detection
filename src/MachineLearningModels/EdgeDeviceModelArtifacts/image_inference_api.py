@@ -12,6 +12,14 @@ from PIL import Image
 import io
 from pathlib import Path
 import requests
+from datetime import datetime
+import time
+
+from inference import (
+    get_feature_names as get_weather_feature_names,
+    predict as predict_weather_class,
+    predict_proba as predict_weather_proba,
+)
 
 app = Flask(__name__)
 # Enable CORS for all routes (allows React app to call the API)
@@ -19,8 +27,12 @@ CORS(app)
 
 # Get the script directory and resolve model path
 SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent.parent.parent  # Go up to project root
-MODEL_PATH = PROJECT_ROOT / "models" / "wildfire_resnet18.pth"
+MODEL_PATH = (
+    SCRIPT_DIR.parent
+    / "CNNModelArtifacts"
+    / "models"
+    / "wildfire_resnet18.pth"
+)
 
 _model = None
 _preprocess = None
@@ -36,7 +48,7 @@ def load_model():
     if not MODEL_PATH.exists():
         raise FileNotFoundError(
             f"Model not found at {MODEL_PATH}. "
-            "Ensure wildfire_resnet18.pth is in the models/ directory."
+            "Ensure wildfire_resnet18.pth is in src/MachineLearningModels/CNNModelArtifacts/models/."
         )
     
     # Setup the model architecture
@@ -56,6 +68,46 @@ def load_model():
     _preprocess = preprocess
     
     return model, preprocess
+
+
+def _to_float(value, field_name):
+    """Convert a value to float and raise a clear API error if invalid."""
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid numeric value for {field_name}: {value}") from exc
+
+
+def _extract_weather_features(payload):
+    """
+    Build model features required by inference.py:
+    MIN_TEMP, MAX_TEMP, AVG_WIND_SPEED, DAY_OF_YEAR
+    """
+    weather = payload.get("weatherData", payload)
+    day_of_year = payload.get("dayOfYear")
+
+    min_temp = weather.get("MIN_TEMP", weather.get("minTemperature", weather.get("temperature")))
+    max_temp = weather.get("MAX_TEMP", weather.get("maxTemperature", weather.get("temperature")))
+    avg_wind_speed = weather.get("AVG_WIND_SPEED", weather.get("windSpeed"))
+    day_of_year = weather.get("DAY_OF_YEAR", day_of_year)
+
+    if day_of_year is None:
+        day_of_year = datetime.utcnow().timetuple().tm_yday
+
+    features = {
+        "MIN_TEMP": _to_float(min_temp, "MIN_TEMP"),
+        "MAX_TEMP": _to_float(max_temp, "MAX_TEMP"),
+        "AVG_WIND_SPEED": _to_float(avg_wind_speed, "AVG_WIND_SPEED"),
+        "DAY_OF_YEAR": _to_float(day_of_year, "DAY_OF_YEAR"),
+    }
+
+    missing = [key for key, value in features.items() if value is None]
+    if missing:
+        raise ValueError(f"Missing required weather features: {', '.join(missing)}")
+
+    # Ensure payload exactly follows trained model feature order.
+    model_feature_names = get_weather_feature_names()
+    return {name: features[name] for name in model_feature_names}
 
 
 @app.route('/predict', methods=['POST'])
@@ -108,12 +160,23 @@ def predict_from_url():
         if not image_url:
             return jsonify({"error": "Empty image_url"}), 400
 
-        # Use a browser-like User-Agent so image hosts (e.g. Wikipedia) don't return 403 Forbidden
+        # Use browser-like headers to reduce 403/429 from image hosts.
         headers = {
-            "User-Agent": "Mozilla/5.0 (compatible; WildfireDetection/1.0; +https://github.com/wildfire-detection)",
-            "Accept": "image/*",
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": image_url,
+            "Connection": "keep-alive",
         }
         resp = requests.get(image_url, timeout=15, headers=headers)
+        if resp.status_code in (403, 429):
+            # Quick retry for transient anti-bot/rate-limit responses.
+            time.sleep(0.6)
+            resp = requests.get(image_url, timeout=20, headers=headers)
         resp.raise_for_status()
         # Bytes (JPEG/PNG/etc.) → PIL Image RGB → model sees a normalized tensor
         img = Image.open(io.BytesIO(resp.content)).convert('RGB')
@@ -131,6 +194,35 @@ def predict_from_url():
         })
     except requests.RequestException as e:
         return jsonify({"error": f"Failed to fetch image: {e}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/predict-weather-risk', methods=['POST'])
+def predict_weather_risk():
+    """
+    Predict fire risk from weather features using EdgeDeviceModelArtifacts/inference.py.
+    Expects JSON containing either:
+      - model feature keys directly: MIN_TEMP, MAX_TEMP, AVG_WIND_SPEED, DAY_OF_YEAR
+      - or a weatherData object with minTemperature/maxTemperature/windSpeed/temperature.
+    """
+    try:
+        payload = request.get_json()
+        if not payload:
+            return jsonify({"error": "No JSON body provided"}), 400
+
+        features = _extract_weather_features(payload)
+        fire_class = int(predict_weather_class(features))
+        fire_probability = float(predict_weather_proba(features))
+
+        return jsonify({
+            "fire_risk_class": fire_class,                  # 0 or 1
+            "fire_risk_probability": round(fire_probability, 4),  # 0-1
+            "fire_risk_percent": round(fire_probability * 100, 2),  # 0-100
+            "features_used": features,
+        })
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
