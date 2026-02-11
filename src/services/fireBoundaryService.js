@@ -410,6 +410,57 @@ class FireBoundaryService {
   }
 
   /**
+   * Calculate grid of rectangular cells with fire probability for heatmap display
+   * Returns cells suitable for rendering as Rectangle overlays (no visualization library)
+   * @param {Array} sensors - Array of sensor objects with position and fireProbability
+   * @param {Object} options - Configuration options
+   * @returns {Array} Array of { bounds: { north, south, east, west }, probability } (0-100)
+   */
+  calculateProbabilityGrid(sensors, options = {}) {
+    const { maxInfluenceMiles = 2.0, decayExponent = 2.5 } = options;
+    const gridResolution = options.gridResolution ?? 0.015;
+
+    const validSensors = sensors.filter(
+      (s) => hasValidSensorPosition(s) && (s.fireProbability || 0) > 0
+    );
+    if (validSensors.length === 0) return [];
+
+    const bounds = this.calculateBounds(validSensors);
+    const padding = maxInfluenceMiles / 69;
+    const expandedBounds = {
+      north: bounds.north + padding,
+      south: bounds.south - padding,
+      east: bounds.east + padding,
+      west: bounds.west - padding,
+    };
+
+    const cells = [];
+    for (let lat = expandedBounds.south; lat < expandedBounds.north; lat += gridResolution) {
+      for (let lng = expandedBounds.west; lng < expandedBounds.east; lng += gridResolution) {
+        const center = { lat: lat + gridResolution / 2, lng: lng + gridResolution / 2 };
+        const probability = this.calculateProbabilityAtPoint(
+          center,
+          validSensors,
+          maxInfluenceMiles,
+          decayExponent
+        );
+        if (probability > 0) {
+          cells.push({
+            bounds: {
+              north: lat + gridResolution,
+              south: lat,
+              east: lng + gridResolution,
+              west: lng,
+            },
+            probability,
+          });
+        }
+      }
+    }
+    return cells;
+  }
+
+  /**
    * Calculate bounding box for sensors
    */
   calculateBounds(sensors) {

@@ -28,6 +28,7 @@ const useAppStore = create((set, get) => ({
   weatherData: {}, // Cache for weather data by sensor ID
   weatherCacheTimestamps: {}, // Track when weather data was last fetched
   markerDisplayMode: "health", // 'health' or 'default'
+  fireDisplayMode: "boundary", // 'boundary' or 'heatmap'
   pathGenerationOptions: {
     maxDistance: 0.5,
     pathDensity: 0.01,
@@ -387,6 +388,7 @@ const useAppStore = create((set, get) => ({
    * @param {string} mode - Display mode ('health' or 'default')
    */
   setMarkerDisplayMode: (mode) => set({ markerDisplayMode: mode }),
+  setFireDisplayMode: (mode) => set({ fireDisplayMode: mode }),
 
   /**
    * Update fire boundary options and regenerate boundaries
