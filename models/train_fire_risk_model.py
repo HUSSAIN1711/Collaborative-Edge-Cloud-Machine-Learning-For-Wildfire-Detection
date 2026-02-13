@@ -2,7 +2,7 @@
 Dev-only script: train the fire-risk Random Forest model and save it for production.
 
 Run this only when the model hyperparameters or the dataset change.
-Output: fire_risk_model.joblib + feature_names.json (used by inference.py).
+Output: fire_risk_model.joblib + feature_names.json (used by fire_risk_inference).
 """
 
 import json
@@ -10,16 +10,16 @@ import os
 import warnings
 from pathlib import Path
 
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# Paths: dataset from env or default (same dir or data/); artifacts saved next to this script
+# Script lives in models/; artifacts saved in same directory
 SCRIPT_DIR = Path(__file__).resolve().parent
 _DEFAULT_CSV = "CA_Weather_Fire_Dataset_1984-2025.csv"
 DATASET_PATH = os.environ.get(

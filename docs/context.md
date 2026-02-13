@@ -66,6 +66,7 @@ The application supports **3 drones**, each assigned to a specific zone:
 - **Zone 3**: Sensors 17-24 (Drone 3)
 
 Each drone:
+
 - Navigates only sensors in its assigned zone
 - Generates its own optimized flight path dynamically
 - Calculates its own fire boundary based on zone sensors
@@ -75,6 +76,7 @@ Each drone:
 ### Zone-Based Organization
 
 Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
+
 - Each zone contains 8 sensors
 - Zones are geographically separated
 - Each zone has a calculated center and bounds
@@ -83,6 +85,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
 ### State Management (useAppStore.js)
 
 **State:**
+
 - `sensors`: Array of 24 sensor objects
 - `zones`: Array of 3 zone objects with sensors and metadata
 - `drones`: Array of 3 drone objects (one per zone)
@@ -92,6 +95,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
 - `markerDisplayMode`: "health" or "default" for marker display
 
 **Key Actions:**
+
 - `initializeZonesAndDrones()`: Builds zones from sensorZones.json and creates drones
 - `setSelectedDroneId()`: Changes which drone is being monitored
 - `updateDronePosition()`: Updates a specific drone's position
@@ -101,6 +105,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
 ## Key Components
 
 ### MapContainer.jsx
+
 - **Purpose**: Main map interface with all visualizations
 - **Features**:
   - Satellite map view (centers on selected drone's zone center)
@@ -112,6 +117,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
   - Map only recenters when drone selection changes (not on movement)
 
 ### DroneSelector.jsx
+
 - **Purpose**: Dropdown menu to select which drone to monitor
 - **Features**:
   - Lists all available drones
@@ -119,6 +125,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
   - Selecting a drone starts its animation and centers map on its zone
 
 ### DroneFeedCard.jsx
+
 - **Purpose**: Displays selected drone's mission information
 - **Features**:
   - Drone name and current location
@@ -127,6 +134,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
   - Live camera feed from selected sensor (when available)
 
 ### SensorHealthOverview.jsx
+
 - **Purpose**: Detailed sensor health and status display
 - **Features**:
   - Fire probability gauge with risk level
@@ -136,6 +144,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
   - Toggle for marker display mode (health vs default)
 
 ### WeatherCard.jsx
+
 - **Purpose**: Comprehensive weather data display
 - **Features**:
   - Temperature gauge (thermometer)
@@ -149,6 +158,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
 ## Services
 
 ### dronePathService.js
+
 - **Purpose**: Generate optimal drone paths dynamically
 - **Features**:
   - Path generation based on sensor locations
@@ -158,6 +168,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
   - Path statistics calculation
 
 ### fireBoundaryService.js
+
 - **Purpose**: Calculate fire boundaries from sensor data
 - **Features**:
   - Convex hull calculation (Graham Scan algorithm)
@@ -167,6 +178,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
   - Caching for performance
 
 ### pathOptimizationService.js
+
 - **Purpose**: Optimize sensor visit order
 - **Features**:
   - Nearest Neighbor algorithm
@@ -175,6 +187,7 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
   - Path cost calculation
 
 ### weatherService.js
+
 - **Purpose**: Fetch and cache weather data
 - **Features**:
   - Google Maps Weather API integration
@@ -183,15 +196,18 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
   - Fallback data on API failure
 
 ### Machine Learning (Fire Risk Model)
-- **Location**: `src/MachineLearningModels/EdgeDeviceModelArtifacts/`
-- **Training (dev-only)**: `train_fire_risk_model.py` — run only when the model or dataset changes. Reads CSV, trains Random Forest, saves `fire_risk_model.joblib` and `feature_names.json`. Dataset: `CA_Weather_Fire_Dataset_1984-2025.csv` in this folder (or env `FIRE_DATASET_CSV`).
-- **Production inference**: `inference.py` — load the saved model and call `predict(features)` or `predict_proba(features)` (dict or DataFrame with MIN_TEMP, MAX_TEMP, AVG_WIND_SPEED, DAY_OF_YEAR). Other code should use this module; do not re-run training in production.
-- **Dependencies**: `requirements.txt` (pandas, numpy, scikit-learn, joblib).
+
+- **Location**: `models/` (consolidated with image model)
+- **Training (dev-only)**: `models/train_fire_risk_model.py` — run only when the model or dataset changes. Reads CSV, trains Random Forest, saves `fire_risk_model.joblib` and `feature_names.json` in `models/`. Dataset: `CA_Weather_Fire_Dataset_1984-2025.csv` (or env `FIRE_DATASET_CSV`).
+- **Production inference**: `api/fire_risk_inference.py` — load the saved model from `models/` and call `predict(features)` or `predict_proba(features)` (dict or DataFrame with MIN_TEMP, MAX_TEMP, AVG_WIND_SPEED, DAY_OF_YEAR). Other code should use this module; do not re-run training in production.
+- **Dependencies**: `api/requirements.txt` (pandas, numpy, scikit-learn, joblib).
 
 ## Utility Functions
 
 ### geoUtils.js
+
 Centralized geographic calculations:
+
 - `calculateDistance()`: Haversine formula for distance in miles
 - `isValidPosition()`: Validate coordinate objects
 - `hasValidSensorPosition()`: Validate sensor positions
@@ -200,21 +216,27 @@ Centralized geographic calculations:
 - `isDroneNearSensor()`: Proximity checking
 
 ### mapUtils.js
+
 Google Maps utilities:
+
 - `isGoogleMapsLoaded()`: Check API availability
 - `createSensorIcon()`: Create sensor marker icons
 - `createDroneIcon()`: Create drone marker icons
 - `calculateDroneRotation()`: Calculate rotation based on movement
 
 ### zoneUtils.js
+
 Zone-specific calculations:
+
 - `calculateZoneCenter()`: Zone center from sensors
 - `calculateZoneBounds()`: Zone bounds from sensors
 
 ## Data Structure
 
 ### Sensors (sensors.json)
+
 24 sensors with:
+
 - `id`: Unique identifier (1-24)
 - `position`: {lat, lng} coordinates
 - `status`: "Active", "Warning", "Critical", or "Offline"
@@ -227,13 +249,17 @@ Zone-specific calculations:
 - Statistical data: `probabilityVariance`, `standardDeviation`, `confidenceInterval`
 
 ### Sensor Zones (sensorZones.json)
+
 3 zone definitions:
+
 - `id`: Zone identifier (zone-1, zone-2, zone-3)
 - `name`: Zone name
 - `sensorIds`: Array of sensor IDs in this zone
 
 ### Zones (Generated at Runtime)
+
 Each zone object contains:
+
 - `id`: Zone identifier
 - `name`: Zone name
 - `sensors`: Array of sensor objects in this zone
@@ -241,7 +267,9 @@ Each zone object contains:
 - `bounds`: {north, south, east, west} bounding box
 
 ### Drones (Generated at Runtime)
+
 Each drone object contains:
+
 - `id`: Drone identifier (drone1, drone2, drone3)
 - `name`: Display name (Drone 1, Drone 2, Drone 3)
 - `zoneId`: Associated zone ID
@@ -254,11 +282,13 @@ Each drone object contains:
 ## Testing
 
 ### Test Framework
+
 - **Vitest**: Fast, Vite-native test runner
 - **Coverage**: V8 coverage provider
 - **Environment**: jsdom for browser simulation
 
 ### Test Coverage
+
 - **68 unit tests** across utilities and services
 - **Test files**:
   - `geoUtils.test.js`: 27 tests
@@ -268,6 +298,7 @@ Each drone object contains:
   - `dronePathService.test.js`: 9 tests
 
 ### Running Tests
+
 ```bash
 npm test              # Watch mode
 npm run test:run      # Run once
@@ -278,7 +309,7 @@ npm run test:coverage # With coverage report
 ## Styling & Theme
 
 - **Theme**: Dark theme using MUI's createTheme
-- **Colors**: 
+- **Colors**:
   - Background: #2c3e50 (dark blue-gray)
   - Paper: #34495e (lighter blue-gray)
   - Selected drone: Cyan (#00FFFF)
@@ -318,6 +349,7 @@ npm run test:coverage # With coverage report
 ## Key Behaviors
 
 ### Drone Animation
+
 - Only the selected drone animates
 - Animation starts when drone is selected
 - Drone moves along its path every 2 seconds
@@ -325,17 +357,20 @@ npm run test:coverage # With coverage report
 - Switching drones stops previous animation and starts new one
 
 ### Map Centering
+
 - Map centers on selected drone's zone center (not drone position)
 - Only recenters when drone selection changes
 - Map stays fixed while drone moves (no constant recentering)
 
 ### Fire Boundaries
+
 - Each zone calculates its own fire boundary
 - Boundaries based on sensors with fireProbability >= 70%
 - Selected zone's boundary is highlighted
 - Boundaries use smooth curves (Catmull-Rom splines)
 
 ### Weather Data
+
 - Fetched automatically when drone approaches sensor (within 0.5 miles)
 - Cached for 1 hour per sensor
 - Comprehensive data: temperature, humidity, wind, pressure, UV, etc.
@@ -376,6 +411,7 @@ npm run test:coverage # With coverage report
 ## Dependencies
 
 See `package.json` for complete list. Key dependencies:
+
 - React 18.2.0
 - @react-google-maps/api 2.19.3
 - @mui/material 5.14.20

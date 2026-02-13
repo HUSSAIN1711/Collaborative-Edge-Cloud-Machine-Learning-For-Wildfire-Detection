@@ -2,7 +2,7 @@
 Production inference: load the trained fire-risk model and run predictions.
 
 Other code should use this module instead of running the training script.
-Requires fire_risk_model.joblib and feature_names.json (produced by train_fire_risk_model.py).
+Requires fire_risk_model.joblib and feature_names.json in models/ (produced by train_fire_risk_model.py).
 """
 
 import json
@@ -13,8 +13,10 @@ import joblib
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-MODEL_PATH = SCRIPT_DIR / "fire_risk_model.joblib"
-FEATURE_NAMES_PATH = SCRIPT_DIR / "feature_names.json"
+PROJECT_ROOT = SCRIPT_DIR.parent
+MODELS_DIR = PROJECT_ROOT / "models"
+MODEL_PATH = MODELS_DIR / "fire_risk_model.joblib"
+FEATURE_NAMES_PATH = MODELS_DIR / "feature_names.json"
 
 _model = None
 _feature_names: List[str] = []
@@ -25,8 +27,8 @@ def _ensure_loaded() -> None:
     if _model is None:
         if not MODEL_PATH.is_file():
             raise FileNotFoundError(
-                f"Model not found: {MODEL_PATH}. "
-                "Run train_fire_risk_model.py first (when model or dataset changes)."
+                f"Model not found at {MODEL_PATH}. "
+                "Run models/train_fire_risk_model.py first (when model or dataset changes)."
             )
         _model = joblib.load(MODEL_PATH)
         with open(FEATURE_NAMES_PATH) as f:
