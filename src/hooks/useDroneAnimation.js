@@ -9,7 +9,7 @@ import { isValidPosition } from "../utils/geoUtils";
  * @param {Object} selectedDrone - Selected drone object
  */
 export function useDroneAnimation(selectedDroneId, selectedDrone) {
-  const { updateDronePosition, updateDronePathIndex } = useAppStore();
+  const { updateDronePosition, updateDronePathIndex, tickSimulation } = useAppStore();
   const animationIntervalsRef = useRef({});
 
   useEffect(() => {
@@ -84,6 +84,8 @@ export function useDroneAnimation(selectedDroneId, selectedDrone) {
         if (isValidPosition(nextPosition)) {
           updateDronePosition(droneId, nextPosition);
           updateDronePathIndex(droneId, nextIndex);
+          // Advance simulation clock — sensors re-poll FireEnvironment
+          tickSimulation();
         } else {
           console.warn(`Invalid position for ${droneId}:`, nextPosition);
         }
@@ -106,5 +108,6 @@ export function useDroneAnimation(selectedDroneId, selectedDrone) {
     selectedDrone,
     updateDronePosition,
     updateDronePathIndex,
+    tickSimulation,
   ]);
 }

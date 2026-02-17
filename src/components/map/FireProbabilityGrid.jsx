@@ -40,10 +40,18 @@ const tooltipStyle = {
 function FireProbabilityGrid({ selectedDrone, visible = true }) {
   const [hoveredCell, setHoveredCell] = useState(null);
   const fireBoundaryOptions = useAppStore((s) => s.fireBoundaryOptions);
+  const simulationTimestamp = useAppStore((s) => s.simulationTimestamp);
+
+  // Only recompute the expensive probability grid every 5 ticks (~10 s)
+  // by flooring the timestamp to the nearest multiple of 5.
+  const throttledTick = Math.floor(simulationTimestamp / 5) * 5;
+  const zoneId = selectedDrone?.zoneId ?? null;
+
   const cells = useMemo(() => {
     const sensors = selectedDrone?.zone?.sensors ?? [];
     return fireBoundaryService.calculateProbabilityGrid(sensors, fireBoundaryOptions);
-  }, [selectedDrone, fireBoundaryOptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoneId, throttledTick, fireBoundaryOptions]);
 
   if (!selectedDrone || cells.length === 0) return null;
 

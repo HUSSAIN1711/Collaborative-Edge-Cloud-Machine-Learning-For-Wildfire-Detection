@@ -10,6 +10,7 @@ import MapContainer from "./components/MapContainer";
 import SensorOverview from "./components/SensorOverview";
 import WeatherCard from "./components/WeatherCard";
 import DroneOverview from "./components/DroneOverview";
+import SimulationControl from "./components/SimulationControl";
 
 /**
  * Theme: grey 80% transparency, Roboto Mono 12pt
@@ -113,6 +114,7 @@ function App() {
             }}
           >
             <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: 2 }}>
+              <SimulationControl />
               <DroneOverview />
               <SensorOverview />
             </Box>

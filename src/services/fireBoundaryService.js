@@ -734,7 +734,7 @@ class FireBoundaryService {
    */
   getCacheKey(sensors, options) {
     const sensorIds = sensors
-      .map((s) => `${s.position.lat},${s.position.lng}`)
+      .map((s) => `${s.position.lat},${s.position.lng}:${s.fireProbability || 0}`)
       .sort()
       .join("|");
     return `${sensorIds}_${JSON.stringify(options)}`;
