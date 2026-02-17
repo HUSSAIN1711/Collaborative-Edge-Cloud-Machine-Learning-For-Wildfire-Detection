@@ -82,7 +82,9 @@ npm run dev
 src/
 ├── components/
 │   ├── MapContainer.jsx    # Main map component with Google Maps
-│   └── Sidebar.jsx         # Sensor details and drone info
+│   ├── SensorOverview.jsx  # Sensor details and health
+│   ├── DroneFeedCard.jsx   # Drone mission and feed
+│   └── DashboardPanel.jsx # Shared panel wrapper
 ├── data/
 │   ├── sensors.json        # Sensor data with statistical measures
 │   ├── dronePath.json      # Drone flight path

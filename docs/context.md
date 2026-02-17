@@ -22,7 +22,8 @@ src/
 │   ├── MapContainer.jsx           # Main map with Google Maps, all drones, fire boundaries
 │   ├── DroneSelector.jsx          # Dropdown menu to select which drone to monitor
 │   ├── DroneFeedCard.jsx          # Displays selected drone's mission and live feed
-│   ├── SensorHealthOverview.jsx   # Sensor details with health gauges
+│   ├── SensorOverview.jsx         # Sensor details with health gauges
+│   ├── DashboardPanel.jsx        # Shared panel wrapper for dashboard sections
 │   ├── WeatherCard.jsx            # Weather data display with gauges
 │   ├── gauges/                    # Reusable gauge components
 │   │   ├── CircularGauge.jsx
@@ -133,9 +134,9 @@ Sensors are organized into 3 predefined zones defined in `sensorZones.json`:
   - Mission status (monitoring sensor vs navigating)
   - Live camera feed from selected sensor (when available)
 
-### SensorHealthOverview.jsx
+### SensorOverview.jsx
 
-- **Purpose**: Detailed sensor health and status display
+- **Purpose**: Sensor overview with health and status display
 - **Features**:
   - Fire probability gauge with risk level
   - Battery level gauge
@@ -340,7 +341,7 @@ npm run test:coverage # With coverage report
 ✅ **Weather Data Caching**: 1-hour cache to reduce API calls
 ✅ **Comprehensive Gauges**: Temperature, humidity, wind, fire risk, battery
 ✅ **Proximity Detection**: Auto-selects sensor when drone is near
-✅ **Responsive Sidebar**: Sensor details and drone feed
+✅ **Dashboard Panels**: Consistent panel layout for map, weather, drone selector, sensors, drone feed
 ✅ **Dark Theme UI**: Modern, clean interface
 ✅ **State Management**: Zustand for efficient state handling
 ✅ **Comprehensive Unit Tests**: 68 tests with good coverage

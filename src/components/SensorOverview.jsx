@@ -2,8 +2,6 @@ import React from "react";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Switch,
   FormControlLabel,
@@ -13,8 +11,9 @@ import {
 import { CheckCircle, Error } from "@mui/icons-material";
 import useAppStore from "../store/useAppStore";
 import CircularGauge from "./gauges/CircularGauge";
+import DashboardPanel from "./DashboardPanel";
 
-function SensorHealthOverview() {
+function SensorOverview() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
   const markerDisplayMode = useAppStore((state) => state.markerDisplayMode);
   const toggleMarkerDisplayMode = useAppStore(
@@ -48,62 +47,52 @@ function SensorHealthOverview() {
 
   if (!selectedSensor) {
     return (
-      <Card sx={{ mb: 0 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Sensor & Health Overview
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Drone approaching sensor... Data will appear automatically.
-          </Typography>
-        </CardContent>
-      </Card>
+      <DashboardPanel title="Sensor Overview">
+        <Typography variant="body2" color="text.secondary">
+          Drone approaching sensor... Data will appear automatically.
+        </Typography>
+      </DashboardPanel>
     );
   }
 
   return (
-    <Card sx={{ mb: 1 }}>
-      <CardContent>
-        {/* Header with Title and Mode Toggle */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 3,
-          }}
-        >
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: "bold", mb: 0.5 }}>
-              Sensor #{selectedSensor.id}
-            </Typography>
-            <Chip
-              label={selectedSensor.status}
-              size="small"
-              sx={{
-                bgcolor: selectedSensor.status === "Active" ? "#4caf50" : "#ff9800",
-                color: "white",
-              }}
+    <DashboardPanel
+      title="Sensor Overview"
+      actions={
+        <FormControlLabel
+          control={
+            <Switch
+              checked={markerDisplayMode === "health"}
+              onChange={toggleMarkerDisplayMode}
+              color="primary"
             />
-          </Box>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={markerDisplayMode === "health"}
-                onChange={toggleMarkerDisplayMode}
-                color="primary"
-              />
-            }
-            label={
-              <Typography variant="caption">
-                {markerDisplayMode === "health" ? "Health Mode" : "Default Mode"}
-              </Typography>
-            }
+          }
+          label={
+            <Typography variant="caption">
+              {markerDisplayMode === "health" ? "Health Mode" : "Default Mode"}
+            </Typography>
+          }
+        />
+      }
+      sx={{ mb: 1 }}
+    >
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+            Sensor #{selectedSensor.id}
+          </Typography>
+          <Chip
+            label={selectedSensor.status}
+            size="small"
+            sx={{
+              bgcolor: selectedSensor.status === "Active" ? "#4caf50" : "#ff9800",
+              color: "white",
+            }}
           />
         </Box>
 
         {/* Health Meters */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid container spacing={2} sx={{ mb: 2 }}>
           {/* Fire Probability Gauge */}
           <Grid item xs={4}>
             <Box
@@ -213,10 +202,9 @@ function SensorHealthOverview() {
             </Typography>
           </Grid>
         </Grid>
-      </CardContent>
-    </Card>
+      </Box>
+    </DashboardPanel>
   );
 }
 
-export default SensorHealthOverview;
-
+export default SensorOverview;

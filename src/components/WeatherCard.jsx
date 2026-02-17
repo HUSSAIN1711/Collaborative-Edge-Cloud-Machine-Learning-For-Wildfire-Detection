@@ -2,12 +2,11 @@ import React, { useEffect } from "react";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Button,
   Paper,
 } from "@mui/material";
+import DashboardPanel from "./DashboardPanel";
 import useAppStore from "../store/useAppStore";
 import { getTemperatureColor, getHumidityColor } from "../utils/colorUtils";
 import { fetchWeatherForSensor, getWeatherForSensor } from "../utils/weatherHelpers";
@@ -66,24 +65,9 @@ function WeatherCard() {
   const weather = getWeatherForSensor(selectedSensor.id, weatherData) || {};
 
   return (
-    // Increased minHeight for overall vertical stability
-    <Card sx={{ minHeight: "280px", height: "100%" }}> 
-      <Box
-        sx={{
-          // Reduced vertical padding (py: 0.75) to shrink the header area
-          px: 1.5, 
-          py: 0.75, 
-          borderBottom: 1,
-          borderColor: "divider",
-          bgcolor: "background.default",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-          Wildfire Conditions
-        </Typography>
+    <DashboardPanel
+      title="Wildfire Conditions"
+      actions={
         <Button
           variant="outlined"
           size="small"
@@ -95,11 +79,10 @@ function WeatherCard() {
         >
           Refresh
         </Button>
-      </Box>
-      
-      {/* Consistent padding for clean internal spacing and bottom edge */}
-      <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-        {weather.temperature !== undefined ? (
+      }
+      sx={{ minHeight: "280px" }}
+    >
+      {weather.temperature !== undefined ? (
           <Grid container spacing={2}>
             
             {/* 1. LEFT COLUMN: GAUGES (7/12 width) */}
@@ -212,8 +195,7 @@ function WeatherCard() {
             </Typography>
           </Box>
         )}
-      </CardContent>
-    </Card>
+    </DashboardPanel>
   );
 }
 

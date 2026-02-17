@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   CardMedia,
   Chip,
   CircularProgress,
@@ -11,6 +9,7 @@ import {
 import useAppStore from "../store/useAppStore";
 import { formatPosition } from "../utils/positionUtils";
 import { predictWildfireFromImageBlob } from "../services/wildfireInferenceService";
+import DashboardPanel from "./DashboardPanel";
 
 /**
  * Component that displays drone mission feed information
@@ -28,7 +27,8 @@ function DroneFeedCard() {
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
   const objectUrlRef = useRef(null);
 
-  const selectedDrone = drones.find((drone) => drone.id === selectedDroneId) || null;
+  const selectedDrone =
+    drones.find((drone) => drone.id === selectedDroneId) || null;
 
   // Fetch image in frontend, display it, and send that same image to the API (no URL sent to API)
   useEffect(() => {
@@ -49,7 +49,12 @@ function DroneFeedCard() {
 
     fetch(selectedSensor.imageUrl)
       .then((res) => {
-        if (!res.ok) throw new Error(res.status === 403 ? "Image host blocked request (403)." : `HTTP ${res.status}`);
+        if (!res.ok)
+          throw new Error(
+            res.status === 403
+              ? "Image host blocked request (403)."
+              : `HTTP ${res.status}`,
+          );
         return res.blob();
       })
       .then((blob) => {
@@ -83,32 +88,11 @@ function DroneFeedCard() {
 
   if (!selectedDrone) {
     return (
-      <Card
-        sx={{
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          bgcolor: "background.paper",
-        }}
-      >
-        <Box
-          sx={{
-            p: 1.5,
-            bgcolor: "background.default",
-            borderBottom: 1,
-            borderColor: "divider",
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-            Drone Mission
-          </Typography>
-        </Box>
-        <CardContent sx={{ flexGrow: 1, p: 2 }}>
-          <Typography variant="body2" color="text.secondary">
-            No drone selected
-          </Typography>
-        </CardContent>
-      </Card>
+      <DashboardPanel title="Drone Mission">
+        <Typography variant="body2" color="text.secondary">
+          No drone selected
+        </Typography>
+      </DashboardPanel>
     );
   }
 
@@ -116,41 +100,21 @@ function DroneFeedCard() {
   const zone = selectedDrone.zone;
 
   return (
-    <Card
-      sx={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        bgcolor: "background.paper",
-      }}
-    >
-      <Box
-        sx={{
-          p: 1.5,
-          bgcolor: "background.default",
-          borderBottom: 1,
-          borderColor: "divider",
-        }}
-      >
-        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-          {selectedDrone.name} Mission
-        </Typography>
-      </Box>
-      <CardContent sx={{ flexGrow: 1, p: 2 }}>
-        <Typography variant="body2" sx={{ mb: 1 }}>
-          <strong>Location:</strong> {formatPosition(dronePosition)}
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 1 }}>
-          <strong>Zone:</strong> {zone?.name || "Unknown"} ({zone?.sensors.length || 0} sensors)
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 1 }}>
-          <strong>Status:</strong>{" "}
-          {selectedSensor ? "Monitoring Sensor" : "Navigating to Next Sensor"}
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 2 }}>
-          <strong>Mission:</strong> Autonomous sensor patrol route
-        </Typography>
-      </CardContent>
+    <DashboardPanel title={`${selectedDrone.name} Mission`}>
+      <Typography variant="body2" sx={{ mb: 1 }}>
+        <strong>Location:</strong> {formatPosition(dronePosition)}
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 1 }}>
+        <strong>Zone:</strong> {zone?.name || "Unknown"} (
+        {zone?.sensors.length || 0} sensors)
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 1 }}>
+        <strong>Status:</strong>{" "}
+        {selectedSensor ? "Monitoring Sensor" : "Navigating to Next Sensor"}
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 2 }}>
+        <strong>Mission:</strong> Autonomous sensor patrol route
+      </Typography>
       {selectedSensor && selectedSensor.imageUrl ? (
         <Box>
           {displayImageUrl ? (
@@ -203,7 +167,8 @@ function DroneFeedCard() {
             )}
             {predictionError && (
               <Typography variant="body2" color="error.main">
-                {predictionError.includes("Failed to fetch") && !predictionError.includes("fetch image")
+                {predictionError.includes("Failed to fetch") &&
+                !predictionError.includes("fetch image")
                   ? "Inference server not reachable. Start it with: cd api && python image_inference_api.py"
                   : predictionError.includes("fetch image") ||
                       predictionError.includes("403") ||
@@ -247,9 +212,8 @@ function DroneFeedCard() {
           </Typography>
         </Box>
       )}
-    </Card>
+    </DashboardPanel>
   );
 }
 
 export default DroneFeedCard;
-

@@ -10,6 +10,7 @@ import {
   ToggleButton,
 } from "@mui/material";
 import useAppStore from "../store/useAppStore";
+import DashboardPanel from "./DashboardPanel";
 
 /**
  * Component that provides a dropdown selector for choosing which drone to view
@@ -27,14 +28,7 @@ function DroneSelector() {
   }
 
   return (
-    <Box
-      sx={{
-        p: 2,
-        bgcolor: "background.paper",
-        borderBottom: 1,
-        borderColor: "divider",
-      }}
-    >
+    <DashboardPanel title="Select Drone">
       <FormControl fullWidth variant="outlined" size="small" sx={{ mb: 1 }}>
         <InputLabel id="drone-selector-label">Select Drone</InputLabel>
         <Select
@@ -68,9 +62,8 @@ function DroneSelector() {
         <ToggleButton value="boundary">Boundary</ToggleButton>
         <ToggleButton value="heatmap">Heatmap</ToggleButton>
       </ToggleButtonGroup>
-    </Box>
+    </DashboardPanel>
   );
 }
 
 export default DroneSelector;
-
