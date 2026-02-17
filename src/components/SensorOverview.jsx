@@ -191,6 +191,24 @@ function SensorOverview() {
               </span>
             }
           />
+          {selectedSensor.temperature !== undefined && (
+            <PanelLine
+              label="Temperature"
+              info={`${selectedSensor.temperature} F`}
+            />
+          )}
+          {selectedSensor.humidity !== undefined && (
+            <PanelLine
+              label="Humidity"
+              info={`${selectedSensor.humidity} %`}
+            />
+          )}
+          {selectedSensor.windSpeed !== undefined && (
+            <PanelLine
+              label="Wind"
+              info={`${selectedSensor.windSpeed} mph ${selectedSensor.windDirection ?? ""}°`}
+            />
+          )}
           <PanelLine label="Last Ping" info={selectedSensor.lastPing} />
           <PanelLine
             label="Location"

@@ -1,22 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Box, Typography, CardMedia, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Typography,
+  CardMedia,
+  Chip,
+  CircularProgress,
+} from "@mui/material";
 import useAppStore from "../store/useAppStore";
 import { formatPosition } from "../utils/positionUtils";
 import { predictWildfireFromImageBlob } from "../services/wildfireInferenceService";
-import { softColors } from "../theme/colors";
+import { getDroneImage } from "../services/droneImageService";
 import DashboardPanel from "./DashboardPanel";
-import PanelTitle from "./panel/PanelTitle";
-import PanelLine from "./panel/PanelLine";
 
 /**
  * Component that displays drone mission feed information
  * Shows drone location, zone, status, and live sensor feed when available
- * @param {boolean} [embedInPanel] - When true, render only inner content (no DashboardPanel wrapper)
  */
-function DroneFeedCard({ embedInPanel = false }) {
+function DroneFeedCard() {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
   const selectedDroneId = useAppStore((state) => state.selectedDroneId);
   const drones = useAppStore((state) => state.drones);
+  const simulationTimestamp = useAppStore((state) => state.simulationTimestamp);
 
   const [prediction, setPrediction] = useState(null);
   const [predictionLoading, setPredictionLoading] = useState(false);
@@ -28,9 +32,16 @@ function DroneFeedCard({ embedInPanel = false }) {
   const selectedDrone =
     drones.find((drone) => drone.id === selectedDroneId) || null;
 
-  // Fetch image in frontend, display it, and send that same image to the API (no URL sent to API)
+  // Derive the image URL from the drone's zone and current simulation timestamp.
+  // Falls back to selectedSensor.imageUrl when no zone-based mapping is available.
+  const droneImageUrl = selectedDrone
+    ? getDroneImage(selectedDrone.zoneId, simulationTimestamp)
+    : null;
+  const imageSource = droneImageUrl || selectedSensor?.imageUrl || null;
+
+  // Fetch image in frontend, display it, and send that same image to the API
   useEffect(() => {
-    if (!selectedSensor?.imageUrl) {
+    if (!imageSource) {
       setPrediction(null);
       setPredictionError(null);
       setDisplayImageUrl(null);
@@ -45,7 +56,7 @@ function DroneFeedCard({ embedInPanel = false }) {
       objectUrlRef.current = null;
     }
 
-    fetch(selectedSensor.imageUrl)
+    fetch(imageSource)
       .then((res) => {
         if (!res.ok)
           throw new Error(
@@ -82,23 +93,14 @@ function DroneFeedCard({ embedInPanel = false }) {
         objectUrlRef.current = null;
       }
     };
-  }, [selectedSensor?.imageUrl]);
-
-  const panelTextSx = {
-    fontFamily: "Roboto Mono, monospace",
-    fontSize: "12px",
-    color: "#999",
-  };
+  }, [imageSource]);
 
   if (!selectedDrone) {
-    const emptyMessage = (
-      <Typography sx={panelTextSx}>No Drone Selected</Typography>
-    );
-    if (embedInPanel) return emptyMessage;
     return (
-      <DashboardPanel>
-        <PanelTitle title="Drone Mission" />
-        {emptyMessage}
+      <DashboardPanel title="Drone Mission">
+        <Typography variant="body2" color="text.secondary">
+          No drone selected
+        </Typography>
       </DashboardPanel>
     );
   }
@@ -106,32 +108,30 @@ function DroneFeedCard({ embedInPanel = false }) {
   const dronePosition = selectedDrone.position || { lat: 0, lng: 0 };
   const zone = selectedDrone.zone;
 
-  const content = (
-    <>
-      <Box sx={{ "& > *": { marginBottom: 0.5 }, mb: 1 }}>
-        <PanelLine label="Location" info={formatPosition(dronePosition)} />
-        <PanelLine
-          label="Zone"
-          info={`${zone?.name || "Unknown"} (${zone?.sensors.length || 0} sensors)`}
-        />
-        <PanelLine
-          label="Status"
-          info={
-            selectedSensor
-              ? "Monitoring Sensor"
-              : "Navigating To Next Sensor"
-          }
-        />
-        <PanelLine label="Mission" info="Autonomous Sensor Patrol Route" />
-      </Box>
-      {selectedSensor && selectedSensor.imageUrl ? (
+  return (
+    <DashboardPanel title={`${selectedDrone.name} Mission`}>
+      <Typography variant="body2" sx={{ mb: 1 }}>
+        <strong>Location:</strong> {formatPosition(dronePosition)}
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 1 }}>
+        <strong>Zone:</strong> {zone?.name || "Unknown"} (
+        {zone?.sensors.length || 0} sensors)
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 1 }}>
+        <strong>Status:</strong>{" "}
+        {selectedSensor ? "Monitoring Sensor" : "Navigating to Next Sensor"}
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 2 }}>
+        <strong>Mission:</strong> Autonomous sensor patrol route
+      </Typography>
+      {imageSource ? (
         <Box>
           {displayImageUrl ? (
             <CardMedia
               component="img"
               height="194"
               image={displayImageUrl}
-              alt={`Live feed from sensor ${selectedSensor.id}`}
+              alt={`Drone feed – ${zone?.name || "unknown zone"} (t=${simulationTimestamp})`}
               sx={{ objectFit: "cover" }}
             />
           ) : (
@@ -141,61 +141,67 @@ function DroneFeedCard({ embedInPanel = false }) {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                bgcolor: "rgba(0,0,0,0.2)",
-                ...panelTextSx,
+                bgcolor: "action.hover",
+                color: "text.secondary",
               }}
             >
               {predictionLoading ? (
-                <CircularProgress size={32} sx={{ color: "#999" }} />
+                <CircularProgress size={32} />
               ) : (
-                <Typography sx={panelTextSx}>
-                  {predictionError ? "Image Unavailable" : "Loading Image…"}
+                <Typography variant="body2">
+                  {predictionError ? "Image unavailable" : "Loading image…"}
                 </Typography>
               )}
             </Box>
           )}
           <Box
             sx={{
-              p: 1,
+              p: 1.5,
               borderTop: 1,
-              borderColor: "rgba(255,255,255,0.1)",
+              borderColor: "divider",
+              bgcolor: "background.default",
               display: "flex",
               alignItems: "center",
               gap: 1,
-              minHeight: 36,
+              minHeight: 40,
             }}
           >
             {predictionLoading && (
               <>
-                <CircularProgress size={18} sx={{ color: "#999" }} />
-                <Typography sx={panelTextSx}>
-                  Running Wildfire Prediction…
+                <CircularProgress size={20} />
+                <Typography variant="body2" color="text.secondary">
+                  Running wildfire prediction…
                 </Typography>
               </>
             )}
             {predictionError && (
-              <Typography sx={{ ...panelTextSx, color: softColors.red }}>
+              <Typography variant="body2" color="error.main">
                 {predictionError.includes("Failed to fetch") &&
                 !predictionError.includes("fetch image")
-                  ? "Inference Server Not Reachable. Start With: cd api && python image_inference_api.py"
+                  ? "Inference server not reachable. Start it with: cd api && python image_inference_api.py"
                   : predictionError.includes("fetch image") ||
                       predictionError.includes("403") ||
                       predictionError.includes("Forbidden")
-                    ? "Image Host Blocked Request (403). Try Another Sensor."
+                    ? "Image host blocked request (403). Try another sensor."
                     : `Prediction: ${predictionError}`}
               </Typography>
             )}
             {!predictionLoading && !predictionError && prediction && (
-              <Typography
+              <Chip
+                size="small"
+                label={
+                  prediction.fire_detected
+                    ? `Fire detected (${prediction.confidence}%)`
+                    : `No fire (${prediction.confidence}%)`
+                }
                 sx={{
-                  ...panelTextSx,
-                  color: prediction.fire_detected ? softColors.red : softColors.green,
+                  bgcolor: prediction.fire_detected
+                    ? "error.dark"
+                    : "success.dark",
+                  color: "white",
+                  fontWeight: "bold",
                 }}
-              >
-                {prediction.fire_detected
-                  ? `Fire Detected (${prediction.confidence} %)`
-                  : `No Fire (${prediction.confidence} %)`}
-              </Typography>
+              />
             )}
           </Box>
         </Box>
@@ -206,22 +212,15 @@ function DroneFeedCard({ embedInPanel = false }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            ...panelTextSx,
+            bgcolor: "background.default",
+            color: "text.secondary",
           }}
         >
-          <Typography sx={panelTextSx}>
-            Waiting For Sensor Selection...
+          <Typography variant="body2">
+            Waiting for sensor selection...
           </Typography>
         </Box>
       )}
-    </>
-  );
-
-  if (embedInPanel) return content;
-  return (
-    <DashboardPanel>
-      <PanelTitle title={`${selectedDrone.name} Mission`} />
-      {content}
     </DashboardPanel>
   );
 }
