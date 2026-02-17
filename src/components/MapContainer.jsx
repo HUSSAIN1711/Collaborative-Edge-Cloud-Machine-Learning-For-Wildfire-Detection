@@ -29,12 +29,14 @@ function MapContainer() {
     drones,
     selectedDroneId,
     setSelectedSensor,
+    setSelectedDroneId,
     initializeZonesAndDrones,
     markerDisplayMode,
     fireDisplayMode,
   } = useAppStore();
 
-  const selectedDrone = drones.find((drone) => drone.id === selectedDroneId) || null;
+  const selectedDrone =
+    drones.find((drone) => drone.id === selectedDroneId) || null;
   const [isInitialized, setIsInitialized] = useState(false);
   const mapRef = useRef(null);
 
@@ -71,13 +73,20 @@ function MapContainer() {
         markerDisplayMode={markerDisplayMode}
         onSensorClick={setSelectedSensor}
       />
-      <DroneMarkers drones={drones} selectedDroneId={selectedDroneId} />
+      <DroneMarkers
+        drones={drones}
+        selectedDroneId={selectedDroneId}
+        onDroneClick={(drone) => setSelectedDroneId(drone.id)}
+      />
       <FireBoundaryPolygons
         drones={drones}
         selectedDroneId={selectedDroneId}
         visible={fireDisplayMode === "boundary"}
       />
-      <FireProbabilityGrid selectedDrone={selectedDrone} visible={fireDisplayMode === "heatmap"} />
+      <FireProbabilityGrid
+        selectedDrone={selectedDrone}
+        visible={fireDisplayMode === "heatmap"}
+      />
     </GoogleMap>
   ) : null;
 }

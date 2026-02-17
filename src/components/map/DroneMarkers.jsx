@@ -7,8 +7,9 @@ import { createDroneIcon, calculateDroneRotation } from "../../utils/mapUtils";
  * Component for rendering drone markers on the map
  * @param {Array} drones - Array of drone objects to render
  * @param {string} selectedDroneId - ID of the currently selected drone
+ * @param {Function} [onDroneClick] - Callback when a drone marker is clicked
  */
-function DroneMarkers({ drones, selectedDroneId }) {
+function DroneMarkers({ drones, selectedDroneId, onDroneClick }) {
   return (
     <>
       {drones.map((drone) => {
@@ -25,6 +26,8 @@ function DroneMarkers({ drones, selectedDroneId }) {
             key={drone.id}
             position={drone.position}
             icon={createDroneIcon(isSelected, rotation)}
+            onClick={() => onDroneClick?.(drone)}
+            cursor={onDroneClick ? "pointer" : undefined}
           />
         );
       })}

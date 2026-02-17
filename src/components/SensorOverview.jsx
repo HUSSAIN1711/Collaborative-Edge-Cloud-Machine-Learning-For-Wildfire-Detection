@@ -7,6 +7,10 @@ import {
   FormControlLabel,
   Chip,
   Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { CheckCircle, Error } from "@mui/icons-material";
 import useAppStore from "../store/useAppStore";
@@ -14,11 +18,18 @@ import CircularGauge from "./gauges/CircularGauge";
 import DashboardPanel from "./DashboardPanel";
 
 function SensorOverview() {
+  const sensors = useAppStore((state) => state.sensors);
   const selectedSensor = useAppStore((state) => state.selectedSensor);
+  const setSelectedSensor = useAppStore((state) => state.setSelectedSensor);
+  const selectedDroneId = useAppStore((state) => state.selectedDroneId);
+  const drones = useAppStore((state) => state.drones);
   const markerDisplayMode = useAppStore((state) => state.markerDisplayMode);
   const toggleMarkerDisplayMode = useAppStore(
-    (state) => state.toggleMarkerDisplayMode
+    (state) => state.toggleMarkerDisplayMode,
   );
+
+  const selectedDrone = drones.find((d) => d.id === selectedDroneId) || null;
+  const sensorList = selectedDrone?.zone?.sensors ?? sensors;
 
   const getFireRiskColor = (probability) => {
     if (probability === 100) return "#f44336"; // Red
@@ -45,16 +56,6 @@ function SensorOverview() {
     return health === "Abnormal" ? "#f44336" : "#4caf50";
   };
 
-  if (!selectedSensor) {
-    return (
-      <DashboardPanel title="Sensor Overview">
-        <Typography variant="body2" color="text.secondary">
-          Drone approaching sensor... Data will appear automatically.
-        </Typography>
-      </DashboardPanel>
-    );
-  }
-
   return (
     <DashboardPanel
       title="Sensor Overview"
@@ -76,7 +77,34 @@ function SensorOverview() {
       }
       sx={{ mb: 1 }}
     >
-      <Box sx={{ mb: 2 }}>
+      <FormControl fullWidth variant="outlined" size="small" sx={{ mb: 2 }}>
+        <InputLabel id="sensor-overview-select-label">Select sensor</InputLabel>
+        <Select
+          labelId="sensor-overview-select-label"
+          id="sensor-overview-select"
+          value={selectedSensor != null ? String(selectedSensor.id) : ""}
+          onChange={(e) => {
+            const id = e.target.value;
+            const sensor = sensorList.find((s) => String(s.id) === String(id));
+            setSelectedSensor(sensor ?? null);
+          }}
+          label="Select sensor"
+        >
+          {sensorList.map((sensor) => (
+            <MenuItem key={sensor.id} value={String(sensor.id)}>
+              Sensor #{sensor.id}
+              {selectedDrone?.zone ? ` (${selectedDrone.zone.name})` : ""}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      {!selectedSensor ? (
+        <Typography variant="body2" color="text.secondary">
+          Drone approaching sensor... Data will appear automatically. Or select a sensor above.
+        </Typography>
+      ) : (
+        <Box sx={{ mb: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: "bold" }}>
             Sensor #{selectedSensor.id}
@@ -85,7 +113,8 @@ function SensorOverview() {
             label={selectedSensor.status}
             size="small"
             sx={{
-              bgcolor: selectedSensor.status === "Active" ? "#4caf50" : "#ff9800",
+              bgcolor:
+                selectedSensor.status === "Active" ? "#4caf50" : "#ff9800",
               color: "white",
             }}
           />
@@ -160,9 +189,7 @@ function SensorOverview() {
               }}
             >
               {selectedSensor.sensorHealth === "Normal" ? (
-                <CheckCircle
-                  sx={{ fontSize: 80, color: "#4caf50", mb: 1 }}
-                />
+                <CheckCircle sx={{ fontSize: 80, color: "#4caf50", mb: 1 }} />
               ) : (
                 <Error sx={{ fontSize: 80, color: "#f44336", mb: 1 }} />
               )}
@@ -203,6 +230,7 @@ function SensorOverview() {
           </Grid>
         </Grid>
       </Box>
+      )}
     </DashboardPanel>
   );
 }

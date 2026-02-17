@@ -9,8 +9,7 @@ import {
 import MapContainer from "./components/MapContainer";
 import SensorOverview from "./components/SensorOverview";
 import WeatherCard from "./components/WeatherCard";
-import DroneFeedCard from "./components/DroneFeedCard";
-import DroneSelector from "./components/DroneSelector";
+import DroneOverview from "./components/DroneOverview";
 
 /**
  * Dark theme configuration for the application
@@ -68,7 +67,7 @@ function App() {
             </Box>
           </Grid>
 
-          {/* Right Column: Sensor Info and Drone Feed */}
+          {/* Right Column: Drone Overview and Sensor Overview */}
           <Grid
             item
             xs={12}
@@ -80,20 +79,9 @@ function App() {
               overflow: "hidden",
             }}
           >
-            {/* Drone Selector - at the top */}
-            <Box sx={{ flexShrink: 0 }}>
-              <DroneSelector />
-            </Box>
-            {/* Scrollable container for both Sensor Info and Drone Feed */}
             <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: 2 }}>
-              {/* Sensor Info - above drone feed */}
-              <Box sx={{ mb: 1 }}>
-                <SensorOverview />
-              </Box>
-              {/* Drone Feed - below sensor info, diagonal to weather */}
-              <Box>
-                <DroneFeedCard />
-              </Box>
+              <DroneOverview />
+              <SensorOverview />
             </Box>
           </Grid>
         </Grid>

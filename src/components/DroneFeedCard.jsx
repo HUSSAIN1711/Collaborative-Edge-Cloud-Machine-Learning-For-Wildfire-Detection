@@ -14,8 +14,9 @@ import DashboardPanel from "./DashboardPanel";
 /**
  * Component that displays drone mission feed information
  * Shows drone location, zone, status, and live sensor feed when available
+ * @param {boolean} [embedInPanel] - When true, render only inner content (no DashboardPanel wrapper)
  */
-function DroneFeedCard() {
+function DroneFeedCard({ embedInPanel = false }) {
   const selectedSensor = useAppStore((state) => state.selectedSensor);
   const selectedDroneId = useAppStore((state) => state.selectedDroneId);
   const drones = useAppStore((state) => state.drones);
@@ -87,11 +88,15 @@ function DroneFeedCard() {
   }, [selectedSensor?.imageUrl]);
 
   if (!selectedDrone) {
+    const emptyMessage = (
+      <Typography variant="body2" color="text.secondary">
+        No drone selected
+      </Typography>
+    );
+    if (embedInPanel) return emptyMessage;
     return (
       <DashboardPanel title="Drone Mission">
-        <Typography variant="body2" color="text.secondary">
-          No drone selected
-        </Typography>
+        {emptyMessage}
       </DashboardPanel>
     );
   }
@@ -99,8 +104,8 @@ function DroneFeedCard() {
   const dronePosition = selectedDrone.position || { lat: 0, lng: 0 };
   const zone = selectedDrone.zone;
 
-  return (
-    <DashboardPanel title={`${selectedDrone.name} Mission`}>
+  const content = (
+    <>
       <Typography variant="body2" sx={{ mb: 1 }}>
         <strong>Location:</strong> {formatPosition(dronePosition)}
       </Typography>
@@ -212,6 +217,13 @@ function DroneFeedCard() {
           </Typography>
         </Box>
       )}
+    </>
+  );
+
+  if (embedInPanel) return content;
+  return (
+    <DashboardPanel title={`${selectedDrone.name} Mission`}>
+      {content}
     </DashboardPanel>
   );
 }
