@@ -1,56 +1,27 @@
 import React from "react";
-import { Box, Paper, Typography } from "@mui/material";
+import { Box, Paper } from "@mui/material";
 
 /**
- * Shared panel wrapper for dashboard sections.
- * Provides consistent container style with optional title and header actions.
- *
- * @param {string} [title] - Panel title (optional)
- * @param {React.ReactNode} [actions] - Header actions, e.g. buttons or toggles (optional)
- * @param {React.ReactNode} children - Panel content
- * @param {object} [sx] - Additional MUI sx for the root Paper
+ * Shared panel wrapper. No separate header; title is first line of content.
+ * 80% transparent with blur so map shows through.
  */
-function DashboardPanel({ title, actions, children, sx = {} }) {
-  const hasHeader = Boolean(title || actions);
-
+function DashboardPanel({ children, sx = {} }) {
   return (
     <Paper
-      elevation={1}
+      elevation={0}
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100%",
         minHeight: 0,
         overflow: "hidden",
-        bgcolor: "background.paper",
+        bgcolor: "rgba(48, 48, 48, 0.2)",
+        backdropFilter: "blur(12px)",
         border: 1,
-        borderColor: "divider",
+        borderColor: "rgba(255,255,255,0.15)",
         borderRadius: 1,
         ...sx,
       }}
     >
-      {hasHeader && (
-        <Box
-          sx={{
-            flexShrink: 0,
-            px: 1.5,
-            py: 1,
-            borderBottom: 1,
-            borderColor: "divider",
-            bgcolor: "background.default",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          {title && (
-            <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-              {title}
-            </Typography>
-          )}
-          <Box sx={{ ml: 1 }}>{actions}</Box>
-        </Box>
-      )}
       <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: 2 }}>
         {children}
       </Box>

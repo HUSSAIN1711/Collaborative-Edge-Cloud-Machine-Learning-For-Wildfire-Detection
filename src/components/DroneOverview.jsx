@@ -1,20 +1,13 @@
 import React from "react";
-import {
-  Box,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  ToggleButtonGroup,
-  ToggleButton,
-} from "@mui/material";
+import { Box } from "@mui/material";
 import useAppStore from "../store/useAppStore";
 import DashboardPanel from "./DashboardPanel";
+import PanelTitle from "./panel/PanelTitle";
+import TextOption from "./panel/TextOption";
 import DroneFeedCard from "./DroneFeedCard";
 
 /**
- * Combined Drone Overview panel: drone selector, boundary/heatmap toggle, and mission feed.
+ * Drone panel: title, text-form selector [Drone 1] [Drone 2], [Boundary] [Heatmap], then mission feed.
  */
 function DroneOverview() {
   const drones = useAppStore((state) => state.drones);
@@ -24,47 +17,36 @@ function DroneOverview() {
   const setFireDisplayMode = useAppStore((state) => state.setFireDisplayMode);
 
   return (
-    <DashboardPanel title="Drone Overview" sx={{ mb: 1 }}>
+    <DashboardPanel sx={{ mb: 1 }}>
+      <PanelTitle title="Drone" />
       {drones.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          No drones available
-        </Typography>
+        <Box sx={{ fontFamily: "Roboto Mono", fontSize: "12px", color: "#999" }}>
+          No Drones Available
+        </Box>
       ) : (
         <>
-          <FormControl fullWidth variant="outlined" size="small" sx={{ mb: 1 }}>
-            <InputLabel id="drone-overview-select-label">Select Drone</InputLabel>
-            <Select
-              labelId="drone-overview-select-label"
-              id="drone-overview-select"
-              value={selectedDroneId || ""}
-              onChange={(e) => setSelectedDroneId(e.target.value)}
-              label="Select Drone"
-            >
-              {drones.map((drone) => (
-                <MenuItem key={drone.id} value={drone.id}>
-                  <Box>
-                    <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                      {drone.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Zone: {drone.zone.name} • {drone.zone.sensors.length} sensors
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <ToggleButtonGroup
-            value={fireDisplayMode}
-            exclusive
-            onChange={(_, v) => v && setFireDisplayMode(v)}
-            size="small"
-            fullWidth
-            sx={{ mb: 2 }}
-          >
-            <ToggleButton value="boundary">Boundary</ToggleButton>
-            <ToggleButton value="heatmap">Heatmap</ToggleButton>
-          </ToggleButtonGroup>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
+            {drones.map((drone) => (
+              <TextOption
+                key={drone.id}
+                label={drone.name}
+                selected={drone.id === selectedDroneId}
+                onClick={() => setSelectedDroneId(drone.id)}
+              />
+            ))}
+          </Box>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1.5 }}>
+            <TextOption
+              label="Boundary"
+              selected={fireDisplayMode === "boundary"}
+              onClick={() => setFireDisplayMode("boundary")}
+            />
+            <TextOption
+              label="Heatmap"
+              selected={fireDisplayMode === "heatmap"}
+              onClick={() => setFireDisplayMode("heatmap")}
+            />
+          </Box>
           <DroneFeedCard embedInPanel />
         </>
       )}

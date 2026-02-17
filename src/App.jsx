@@ -12,15 +12,21 @@ import WeatherCard from "./components/WeatherCard";
 import DroneOverview from "./components/DroneOverview";
 
 /**
- * Dark theme configuration for the application
+ * Theme: grey 80% transparency, Roboto Mono 12pt
  */
 const darkTheme = createTheme({
   palette: {
     mode: "dark",
     background: {
-      default: "#2c3e50",
-      paper: "#34495e",
+      default: "rgba(64, 64, 64, 0.2)",
+      paper: "rgba(48, 48, 48, 0.2)",
     },
+  },
+  typography: {
+    fontFamily: '"Roboto Mono", monospace',
+    fontSize: 12,
+    body1: { fontSize: "12px" },
+    body2: { fontSize: "12px" },
   },
 });
 
@@ -34,40 +40,65 @@ function App() {
       <CssBaseline />
       <Box
         sx={{
-          display: "flex",
-          flexDirection: "column",
+          position: "relative",
+          width: "100%",
           height: "100vh",
           overflow: "hidden",
         }}
       >
-        <Grid container sx={{ height: "100%" }}>
-          {/* Left Column: Map and Weather */}
+        {/* Map: full viewport behind everything */}
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+          }}
+        >
+          <MapContainer />
+        </Box>
+
+        {/* Overlay: 80% transparent with blur so map shows through */}
+        <Grid
+          container
+          sx={{
+            position: "relative",
+            zIndex: 1,
+            height: "100%",
+            pointerEvents: "none",
+            "& > *": { pointerEvents: "auto" },
+          }}
+        >
+          {/* Left: pass-through so map receives drag/click; only weather strip is interactive */}
           <Grid
             item
             xs={12}
             md={8}
-            sx={{ display: "flex", flexDirection: "column", height: "100%" }}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              pointerEvents: "none",
+            }}
           >
-            {/* Map Container - takes most of the space */}
-            <Box sx={{ flex: 1, minHeight: 0, position: "relative" }}>
-              <MapContainer />
-            </Box>
-            {/* Weather Conditions - under the map only */}
+            <Box sx={{ flex: 1, minHeight: 0 }} />
             <Box
               sx={{
                 flexShrink: 0,
                 p: 2,
                 borderTop: 1,
-                borderColor: "divider",
+                borderColor: "rgba(255,255,255,0.15)",
                 height: "250px",
                 overflow: "auto",
+                bgcolor: "rgba(48, 48, 48, 0.2)",
+                backdropFilter: "blur(12px)",
+                pointerEvents: "auto",
               }}
             >
               <WeatherCard />
             </Box>
           </Grid>
 
-          {/* Right Column: Drone Overview and Sensor Overview */}
+          {/* Right: 80% transparent + blur, panels */}
           <Grid
             item
             xs={12}
@@ -77,6 +108,8 @@ function App() {
               flexDirection: "column",
               height: "100%",
               overflow: "hidden",
+              bgcolor: "rgba(48, 48, 48, 0.2)",
+              backdropFilter: "blur(12px)",
             }}
           >
             <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: 2 }}>
