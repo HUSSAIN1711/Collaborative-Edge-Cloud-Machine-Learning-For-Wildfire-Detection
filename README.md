@@ -84,7 +84,8 @@ src/
 │   ├── MapContainer.jsx      # Main map with drones and sensors
 │   ├── DroneSelector.jsx     # Drone selection dropdown
 │   ├── DroneFeedCard.jsx     # Selected drone information
-│   ├── SensorHealthOverview.jsx  # Sensor health display
+│   ├── SensorOverview.jsx       # Sensor overview and health display
+│   ├── DashboardPanel.jsx      # Shared panel wrapper
 │   ├── WeatherCard.jsx       # Weather data visualization
 │   └── gauges/               # Reusable gauge components
 ├── data/                # Static data files

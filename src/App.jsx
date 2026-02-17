@@ -1,21 +1,32 @@
 import React from "react";
-import { Box, Grid, CssBaseline, ThemeProvider, createTheme } from "@mui/material";
+import {
+  Box,
+  Grid,
+  CssBaseline,
+  ThemeProvider,
+  createTheme,
+} from "@mui/material";
 import MapContainer from "./components/MapContainer";
-import SensorHealthOverview from "./components/SensorHealthOverview";
+import SensorOverview from "./components/SensorOverview";
 import WeatherCard from "./components/WeatherCard";
-import DroneFeedCard from "./components/DroneFeedCard";
-import DroneSelector from "./components/DroneSelector";
+import DroneOverview from "./components/DroneOverview";
 
 /**
- * Dark theme configuration for the application
+ * Theme: grey 80% transparency, Roboto Mono 12pt
  */
 const darkTheme = createTheme({
   palette: {
     mode: "dark",
     background: {
-      default: "#2c3e50",
-      paper: "#34495e",
+      default: "rgba(64, 64, 64, 0.2)",
+      paper: "rgba(48, 48, 48, 0.2)",
     },
+  },
+  typography: {
+    fontFamily: '"Roboto Mono", monospace',
+    fontSize: 12,
+    body1: { fontSize: "12px" },
+    body2: { fontSize: "12px" },
   },
 });
 
@@ -27,36 +38,83 @@ function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        <Grid container sx={{ height: '100%' }}>
-          {/* Left Column: Map and Weather */}
-          <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Map Container - takes most of the space */}
-            <Box sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
-              <MapContainer />
-            </Box>
-            {/* Weather Conditions - under the map only */}
-            <Box sx={{ flexShrink: 0, p: 2, borderTop: 1, borderColor: 'divider', height: '250px', overflow: 'auto' }}>
+      <Box
+        sx={{
+          position: "relative",
+          width: "100%",
+          height: "100vh",
+          overflow: "hidden",
+        }}
+      >
+        {/* Map: full viewport behind everything */}
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+          }}
+        >
+          <MapContainer />
+        </Box>
+
+        {/* Overlay: 80% transparent with blur so map shows through */}
+        <Grid
+          container
+          sx={{
+            position: "relative",
+            zIndex: 1,
+            height: "100%",
+            pointerEvents: "none",
+            "& > *": { pointerEvents: "auto" },
+          }}
+        >
+          {/* Left: pass-through so map receives drag/click; only weather strip is interactive */}
+          <Grid
+            item
+            xs={12}
+            md={8}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              pointerEvents: "none",
+            }}
+          >
+            <Box sx={{ flex: 1, minHeight: 0 }} />
+            <Box
+              sx={{
+                flexShrink: 0,
+                p: 2,
+                borderTop: 1,
+                borderColor: "rgba(255,255,255,0.15)",
+                height: "250px",
+                overflow: "auto",
+                bgcolor: "rgba(48, 48, 48, 0.2)",
+                backdropFilter: "blur(12px)",
+                pointerEvents: "auto",
+              }}
+            >
               <WeatherCard />
             </Box>
           </Grid>
 
-          {/* Right Column: Sensor Info and Drone Feed */}
-          <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-            {/* Drone Selector - at the top */}
-            <Box sx={{ flexShrink: 0 }}>
-              <DroneSelector />
-            </Box>
-            {/* Scrollable container for both Sensor Info and Drone Feed */}
-            <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 2 }}>
-              {/* Sensor Info - above drone feed */}
-              <Box sx={{ mb: 1 }}>
-                <SensorHealthOverview />
-              </Box>
-              {/* Drone Feed - below sensor info, diagonal to weather */}
-              <Box>
-                <DroneFeedCard />
-              </Box>
+          {/* Right: 80% transparent + blur, panels */}
+          <Grid
+            item
+            xs={12}
+            md={4}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              overflow: "hidden",
+              bgcolor: "rgba(48, 48, 48, 0.2)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: 2 }}>
+              <DroneOverview />
+              <SensorOverview />
             </Box>
           </Grid>
         </Grid>

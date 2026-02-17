@@ -25,6 +25,7 @@ const useAppStore = create((set, get) => ({
   drones: [], // Array of drone objects, one per zone
   selectedDroneId: null, // ID of the currently selected drone
   selectedSensor: null,
+  sensorAutoMode: true, // when true, proximity hook sets selectedSensor; when false, user selection is used
   weatherData: {}, // Cache for weather data by sensor ID
   weatherCacheTimestamps: {}, // Track when weather data was last fetched
   markerDisplayMode: "health", // 'health' or 'default'
@@ -246,6 +247,7 @@ const useAppStore = create((set, get) => ({
    * @param {Object|null} sensor - Sensor object to select, or null to deselect
    */
   setSelectedSensor: (sensor) => set({ selectedSensor: sensor }),
+  setSensorAutoMode: (enabled) => set({ sensorAutoMode: enabled }),
 
   /**
    * Set the selected drone ID

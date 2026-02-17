@@ -36,7 +36,11 @@ export function useDroneAnimation(selectedDroneId, selectedDrone) {
 
     // Ensure drone position is synced with pathIndex when first selected
     const currentPathIndex = drone.pathIndex || 0;
-    if (dronePath && dronePath.length > 0 && currentPathIndex < dronePath.length) {
+    if (
+      dronePath &&
+      dronePath.length > 0 &&
+      currentPathIndex < dronePath.length
+    ) {
       const currentPosition = dronePath[currentPathIndex];
       if (isValidPosition(currentPosition)) {
         // Sync position to current pathIndex
@@ -97,5 +101,10 @@ export function useDroneAnimation(selectedDroneId, selectedDrone) {
         delete animationIntervalsRef.current[droneId];
       }
     };
-  }, [selectedDroneId, selectedDrone, updateDronePosition, updateDronePathIndex]);
+  }, [
+    selectedDroneId,
+    selectedDrone,
+    updateDronePosition,
+    updateDronePathIndex,
+  ]);
 }

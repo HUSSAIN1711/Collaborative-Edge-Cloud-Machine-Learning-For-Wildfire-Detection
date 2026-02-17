@@ -39,14 +39,24 @@ export function useMapCenter(selectedDroneId, mapRef) {
     }
 
     // Find the selected drone from current drones array
-    const currentSelectedDrone = currentDrones.find((d) => d.id === selectedDroneId);
+    const currentSelectedDrone = currentDrones.find(
+      (d) => d.id === selectedDroneId,
+    );
 
     // Center on zone center, not drone position
-    if (currentSelectedDrone && currentSelectedDrone.zone && currentSelectedDrone.zone.center) {
+    if (
+      currentSelectedDrone &&
+      currentSelectedDrone.zone &&
+      currentSelectedDrone.zone.center
+    ) {
       const zoneCenter = currentSelectedDrone.zone.center;
       setMapCenter(zoneCenter);
       mapRef.current.setCenter(zoneCenter);
-    } else if (currentDrones[0] && currentDrones[0].zone && currentDrones[0].zone.center) {
+    } else if (
+      currentDrones[0] &&
+      currentDrones[0].zone &&
+      currentDrones[0].zone.center
+    ) {
       // Fallback to first drone's zone center
       const zoneCenter = currentDrones[0].zone.center;
       setMapCenter(zoneCenter);

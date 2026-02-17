@@ -10,7 +10,8 @@ import { isValidPosition, isDroneNearSensor } from "../utils/geoUtils";
  * @param {Array} sensors - Array of sensor objects
  */
 export function useProximityCheck(selectedDrone, sensors) {
-  const { setSelectedSensor, getWeatherData, setWeatherData } = useAppStore();
+  const { setSelectedSensor, getWeatherData, setWeatherData, sensorAutoMode } =
+    useAppStore();
   const [activeSensor, setActiveSensor] = useState(null);
   const proximityCheckTimeoutRef = useRef(null);
 
@@ -48,7 +49,7 @@ export function useProximityCheck(selectedDrone, sensors) {
                 dronePosition.lat,
                 dronePosition.lng,
                 sensor.position.lat,
-                sensor.position.lng
+                sensor.position.lng,
               );
 
               // Check if drone is within proximity threshold (0.5 miles)
@@ -56,17 +57,18 @@ export function useProximityCheck(selectedDrone, sensors) {
                 isNearAnySensor = true;
               }
             } catch (sensorError) {
-              console.error(`Error processing sensor ${sensor.id}:`, sensorError);
+              console.error(
+                `Error processing sensor ${sensor.id}:`,
+                sensorError,
+              );
             }
           });
 
           // Only proceed with detailed proximity check if drone is reasonably close to any sensor
           if (!isNearAnySensor) {
-            // Drone is far from all sensors, clear active sensor if needed
-            if (activeSensor) {
-              setActiveSensor(null);
-            }
-            return; // Exit early to avoid unnecessary processing
+            if (activeSensor) setActiveSensor(null);
+            // In auto mode, keep last sensor visible until a new one is near (don't clear to "waiting")
+            return;
           }
 
           let nearSensor = null;
@@ -80,10 +82,13 @@ export function useProximityCheck(selectedDrone, sensors) {
               if (isDroneNearSensor(dronePosition, sensor.position, 0.5)) {
                 nearSensor = sensor;
                 setActiveSensor(sensor);
-                setSelectedSensor(sensor);
+                if (sensorAutoMode) setSelectedSensor(sensor);
               }
             } catch (sensorError) {
-              console.error(`Error processing sensor ${sensor.id}:`, sensorError);
+              console.error(
+                `Error processing sensor ${sensor.id}:`,
+                sensorError,
+              );
             }
           });
 
@@ -94,7 +99,10 @@ export function useProximityCheck(selectedDrone, sensors) {
 
             if (!cachedWeather) {
               weatherService
-                .fetchWeatherData(nearSensor.position.lat, nearSensor.position.lng)
+                .fetchWeatherData(
+                  nearSensor.position.lat,
+                  nearSensor.position.lng,
+                )
                 .then((weatherData) => {
                   setWeatherData(nearSensor.id, weatherData);
                 })
@@ -120,6 +128,7 @@ export function useProximityCheck(selectedDrone, sensors) {
   }, [
     selectedDrone,
     sensors,
+    sensorAutoMode,
     setSelectedSensor,
     getWeatherData,
     setWeatherData,
